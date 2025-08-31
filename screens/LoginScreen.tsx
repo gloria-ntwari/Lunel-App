@@ -20,6 +20,9 @@ export default function LoginScreen() {
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Event' as never)}>
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.socialIcon} onPress={() => navigation.navigate('AdminHome' as never)}> 
+        <Text style={styles.AdminText}>Admin Login</Text>
+      </TouchableOpacity>
       <Text style={styles.orText}>- Or login in with -</Text>
       <View style={styles.socialContainer}>
         <TouchableOpacity style={styles.socialIcon2} onPress={() => alert('Button pressed!')}>
@@ -86,6 +89,10 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     fontWeight: '600',
+  },
+  AdminText: {
+    color: '#6B46C1',
+    textAlign: 'center',    
   },
   orText: {
     textAlign: 'center',

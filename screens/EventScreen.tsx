@@ -5,6 +5,7 @@ import CategoryTabs from '../components/EventScreenComponents/CategoryTabs';
 import RecommendedSection from '../components/EventScreenComponents/RecommendedSection';
 import WeekEventsSection from '../components/EventScreenComponents/WeekEventsSection';
 import BottomNav from '../components/BottomNav';
+import CompletedEvents from '../components/EventScreenComponents/Completed';
 
 const EventScreen = () => {
   return (
@@ -13,6 +14,7 @@ const EventScreen = () => {
         <Header greeting="Hello, Gloria" />
         <RecommendedSection />
         <WeekEventsSection />
+        <CompletedEvents />
       </ScrollView>
       <BottomNav activeTab="Home" />
     </View>

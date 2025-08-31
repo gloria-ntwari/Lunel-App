@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 
-const WeekEventsSection = () => {
+const CompletedEvents = () => {
   return (
     <View style={styles.weekEventsContainer}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Week events</Text>
+        <Text style={styles.sectionTitle}>Completed events</Text>
       </View>
       <ScrollView
         horizontal
@@ -33,7 +33,7 @@ const WeekEventsSection = () => {
 const styles = StyleSheet.create({
   weekEventsContainer: {
     paddingTop: 8,
-    paddingBottom: 4,
+    paddingBottom: 16,
 
   },
   header: {
@@ -110,4 +110,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default WeekEventsSection;
+export default CompletedEvents;

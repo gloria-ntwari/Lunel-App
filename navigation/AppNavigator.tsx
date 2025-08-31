@@ -7,6 +7,8 @@ import EventScreen from "../screens/EventScreen";
 import CalendarScreen from "../screens/CalendarScreen";
 import TimetableScreen from "../screens/TimetableScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import AdminHomeScreen from "../screens/AdminHomeScreen";
+import AdminMealsScreen from "../screens/AdminMealsScreen";
 
 const Stack = createStackNavigator();
 
@@ -20,6 +22,8 @@ export default function AppNavigator() {
             <Stack.Screen name="Calendar" component={CalendarScreen} />
             <Stack.Screen name="Timetable" component={TimetableScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="AdminHome" component={AdminHomeScreen} />
+            <Stack.Screen name="AdminMeals" component={AdminMealsScreen} />
         </Stack.Navigator>
     );
 }
