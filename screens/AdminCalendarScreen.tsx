@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, FlatList } from 'react-native';
-import Header from '../components/User(Student)/Calendar/Header';
-import BottomNav from '../components/User(Student)/BottomNav';
-import CalendarCard from '../components/User(Student)/Calendar/CalendarCard';
-import EventItem from '../components/User(Student)/Calendar/EventItem';
+import Header from '../components/Admin/Calendar/Header';
+import BottomNav from '../components/Admin/BottomNav';
+import CalendarCard from '../components/Admin/Calendar/CalendarCard';
+import EventItem from '../components/Admin/Calendar/EventItem';
 import { format, isSameDay } from 'date-fns';
 
 const CalendarScreen = () => {

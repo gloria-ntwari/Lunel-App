@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import Header from '../components/EventScreenComponents/Header';
-import CategoryTabs from '../components/EventScreenComponents/CategoryTabs';
-import RecommendedSection from '../components/EventScreenComponents/RecommendedSection';
-import WeekEventsSection from '../components/EventScreenComponents/WeekEventsSection';
-import BottomNav from '../components/BottomNav';
-import CompletedEvents from '../components/EventScreenComponents/Completed';
+import Header from '../components/User(Student)/EventScreenComponents/Header';
+import CategoryTabs from '../components/User(Student)/EventScreenComponents/CategoryTabs';
+import RecommendedSection from '../components/User(Student)/EventScreenComponents/RecommendedSection';
+import WeekEventsSection from '../components/User(Student)/EventScreenComponents/WeekEventsSection';
+import BottomNav from '../components/User(Student)/BottomNav';
+import CompletedEvents from '../components/User(Student)/EventScreenComponents/Completed';
 
 const EventScreen = () => {
   return (

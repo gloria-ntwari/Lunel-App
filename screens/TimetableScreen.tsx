@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, addDays, startOfWeek } from 'date-fns';
-import BottomNav from '../components/BottomNav';
-import Header from '../components/Timetable/Header';
+import BottomNav from '../components/User(Student)/BottomNav';
+import Header from '../components/User(Student)/Timetable/Header';
 
 // Define types for our data
 interface Meal {

@@ -1,0 +1,216 @@
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import CategoryTabs from './CategoryTabs';
+import NotificationModal from '../NotificationModal';
+
+let LinearGradient: any;
+try {
+  // Lazy require to avoid breaking if not installed yet
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  LinearGradient = require('expo-linear-gradient').LinearGradient;
+} catch (e) {
+  LinearGradient = ({ children, style }: any) => <View style={[style, { backgroundColor: '#5b1ab2' }]}>{children}</View>;
+}
+
+interface HeaderProps {
+  greeting: string;
+}
+
+const Header = ({ greeting }: HeaderProps) => {
+  const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: '1',
+      title: 'New Event Added',
+      message: 'A new event "Tech Conference 2024" has been added to your calendar',
+      type: 'event' as const,
+      timestamp: '2 hours ago',
+      isRead: false,
+    },
+    {
+      id: '2',
+      title: 'Event Reminder',
+      message: 'Your event "Team Meeting" starts in 30 minutes',
+      type: 'reminder' as const,
+      timestamp: '1 hour ago',
+      isRead: false,
+    },
+    {
+      id: '3',
+      title: 'Event Update',
+      message: 'The venue for "Annual Party" has been changed to Grand Hall',
+      type: 'update' as const,
+      timestamp: '3 hours ago',
+      isRead: true,
+    },
+    {
+      id: '4',
+      title: 'New Event Category',
+      message: 'A new category "Workshops" has been added to help organize your events',
+      type: 'update' as const,
+      timestamp: '1 day ago',
+      isRead: true,
+    },
+  ]);
+
+  const handleNotificationPress = () => {
+    setNotificationModalVisible(true);
+  };
+
+  const handleCloseNotificationModal = () => {
+    setNotificationModalVisible(false);
+  };
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(prev =>
+      prev.map(notification =>
+        notification.id === id
+          ? { ...notification, isRead: true }
+          : notification
+      )
+    );
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  return (
+    <>
+      <LinearGradient
+        colors={["#5b1ab2", "#a73ada"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 5 }}
+        style={styles.header}
+      >
+        <View style={styles.topRow}>
+          <TouchableOpacity>
+            <View style={styles.locationContainer}>
+              <Text style={styles.locationText}>{greeting}</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={handleNotificationPress}
+          >
+            <Ionicons name="notifications-outline" size={22} color="#fff" />
+            {unreadCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.searchRow}>
+          <View style={styles.searchBarWrapper}>
+            <Ionicons name="search" size={18} color="#cfc5e6" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchBar}
+              placeholder="Search an event"
+              placeholderTextColor="#cfc5e6"
+            />
+          </View>
+          <TouchableOpacity style={styles.filterButton}>
+            <MaterialCommunityIcons name="tune-variant" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        <View style={{ marginLeft: -10, marginTop: 20 }}>
+          <CategoryTabs />
+        </View>
+      </LinearGradient>
+
+      <NotificationModal
+        visible={notificationModalVisible}
+        onClose={handleCloseNotificationModal}
+        notifications={notifications}
+        onMarkAsRead={handleMarkAsRead}
+      />
+    </>
+  );
+};
+
+const styles = StyleSheet.create({
+  header: {
+    paddingTop: 56,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 24,
+
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationText: {
+    color: '#fff',
+    fontSize: 18,
+    marginLeft: 6,
+    fontWeight: '600',
+  },
+  notificationButton: {
+    position: 'relative',
+    padding: 4,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#f96c3d',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#5b1ab2',
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchBarWrapper: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ffffff64',
+    paddingLeft: 36,
+    paddingRight: 12,
+    height: 40,
+    justifyContent: 'center',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 12,
+  },
+  searchBar: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  filterButton: {
+    width: 40,
+    height: 40,
+    marginLeft: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+export default Header;

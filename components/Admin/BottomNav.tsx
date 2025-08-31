@@ -22,7 +22,7 @@ const BottomNav = ({ activeTab = 'Home' }: BottomNavProps) => {
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.navItem}
-        onPress={() => navigation.navigate('Calendar')}
+        onPress={() => navigation.navigate('AdminCalendar')}
       >
         <Ionicons name="calendar-outline" size={24} color={activeTab === 'Calendar' ? '#f96c3d' : '#b7b0b0ff'} />
         <Text style={[styles.navText, activeTab === 'Calendar' && styles.navTextActive]}>Calendar</Text>
@@ -35,7 +35,7 @@ const BottomNav = ({ activeTab = 'Home' }: BottomNavProps) => {
         <Text style={[styles.navText, activeTab === 'Timetable' && styles.navTextActive]}>Meals</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.navItem}
-      onPress={() => navigation.navigate('Profile')}
+      onPress={() => navigation.navigate('AdminProfile')}
        >
         <Ionicons name="person-outline" size={24} color={activeTab === 'Profile' ? '#f96c3d' : '#b7b0b0ff'} />
         <Text style={[styles.navText, activeTab === 'Profile' && styles.navTextActive]}>Profile</Text>

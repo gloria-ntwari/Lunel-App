@@ -1,11 +1,9 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import CategoryTabs from './CategoryTabs';
 let LinearGradient: any;
 try {
-  // Lazy require to avoid breaking if not installed yet
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+
   LinearGradient = require('expo-linear-gradient').LinearGradient;
 } catch (e) {
   LinearGradient = ({ children, style }: any) => <View style={[style, { backgroundColor: '#5b1ab2' }]}>{children}</View>;
@@ -14,6 +12,7 @@ try {
 interface HeaderProps {
   greeting: string;
 }
+
 
 const Header = ({ greeting }: HeaderProps) => {
   return (
@@ -31,34 +30,17 @@ const Header = ({ greeting }: HeaderProps) => {
         </TouchableOpacity>
         <Ionicons name="notifications-outline" size={22} color="#fff" />
       </View>
-
-      <View style={styles.searchRow}>
-        <View style={styles.searchBarWrapper}>
-          <Ionicons name="search" size={18} color="#cfc5e6" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Search an event"
-            placeholderTextColor="#cfc5e6"
-          />
-        </View>
-        <TouchableOpacity style={styles.filterButton}>
-          <MaterialCommunityIcons name="tune-variant" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
-      <View style={{ marginLeft: -10, marginTop: 20 }}>
-        <CategoryTabs />
-      </View>
     </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   header: {
-    paddingTop: 56,
+    paddingTop: 76,
     paddingBottom: 20,
+    height: 230,
     paddingHorizontal: 16,
     borderBottomLeftRadius: 24,
-
   },
   topRow: {
     flexDirection: 'row',

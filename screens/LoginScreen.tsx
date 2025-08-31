@@ -10,11 +10,11 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Lunel</Text>
+      <Text style={styles.title}>B-Lunder</Text>
       <Text style={styles.subtitle}>Login to your Account</Text>
       <TextInput style={[styles.input, styles.passwordInput]} placeholder="Email" />
       <TextInput style={[styles.input, styles.passwordInput]} placeholder="Password" secureTextEntry />
-      <TouchableOpacity style={styles.forgotPassword} onPress={() => alert('Forgot Password pressed!')}>
+      <TouchableOpacity style={styles.forgotPassword} onPress={() => navigation.navigate('ForgotPassword' as never)}>
         <Text style={styles.forgotText}>Forgot Password?</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Event' as never)}>
@@ -28,10 +28,6 @@ export default function LoginScreen() {
         <TouchableOpacity style={styles.socialIcon2} onPress={() => alert('Button pressed!')}>
           <Image source={require('../assets/icons/google.png')} style={styles.image}/>
           <Text style={styles.buttonGoogle}>Google</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.socialIcon2} onPress={() => alert('Button pressed!')}>
-          <Image source={require('../assets/icons/apple.png')} style={styles.image2}/>
-          <Text style={styles.buttonGoogle}>Apple</Text>
         </TouchableOpacity>
       </View>
       <TouchableOpacity
@@ -62,6 +58,7 @@ const styles = StyleSheet.create({
     color: '#6B46C1',
     marginBottom: SPACING * 2,
     textAlign: 'center',
+    fontFamily: 'Pacifico',
   },
   subtitle: {
     fontWeight: '600',

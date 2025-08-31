@@ -1,7 +1,7 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
-import BottomNav from '../components/BottomNav';
+import BottomNav from '../components/User(Student)/BottomNav';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
@@ -9,7 +9,6 @@ const ProfileScreen = () => {
   const [userData, setUserData] = useState({
     name: 'John Doe',
     email: 'john.doe@example.com',
-    studentId: 'STU12345',
     password: '********',
   });
 
@@ -21,11 +20,10 @@ const ProfileScreen = () => {
       alert("Passwords do not match!");
       return;
     }
-    setUserData({ 
-      name: formData.name, 
-      email: formData.email, 
-      studentId: formData.studentId, 
-      password: formData.password 
+    setUserData({
+      name: formData.name,
+      email: formData.email,
+      password: formData.password
     });
     setIsEditMode(false);
   };
@@ -35,6 +33,24 @@ const ProfileScreen = () => {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: () => {
+            // Navigate to LoginScreen
+            navigation.navigate('Login' as never);
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -76,12 +92,6 @@ const ProfileScreen = () => {
               <Text style={styles.infoText}>{userData.email}</Text>
             )}
           </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Student ID</Text>
-            <Text style={[styles.infoText, !isEditMode && styles.disabled]}>{userData.studentId}</Text>
-          </View>
-
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
             {isEditMode ? (
@@ -138,6 +148,14 @@ const ProfileScreen = () => {
               <Text style={styles.buttonText}>Edit Profile</Text>
             </TouchableOpacity>
           )}
+
+          {/* Logout Button */}
+          <TouchableOpacity
+            style={[styles.button, styles.logoutButton]}
+            onPress={handleLogout}
+          >
+            <Text style={[styles.buttonText, styles.logoutButtonText]}>Logout</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
       <BottomNav activeTab="Profile" />
@@ -154,7 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: SPACING * 2,
   },
-    subtitle: {
+  subtitle: {
     fontWeight: '600',
     marginBottom: SPACING,
     textAlign: 'center',
@@ -163,7 +181,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     padding: SPACING,
-    paddingBottom: 100, 
+    paddingBottom: 100,
   },
   header: {
     alignItems: 'center',
@@ -232,6 +250,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: SPACING,
     marginBottom: SPACING * 3,
+  },
+  logoutButton: {
+    backgroundColor: '#f96c3d',
+    marginTop: 8,
+    marginBottom: 30,
+  },
+  logoutButtonText: {
+    color: '#fff',
   },
 });
 
