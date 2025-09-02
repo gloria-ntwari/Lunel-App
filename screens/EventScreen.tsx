@@ -6,6 +6,7 @@ import RecommendedSection from '../components/User(Student)/EventScreenComponent
 import AllEventsSection from '../components/User(Student)/EventScreenComponents/AllEventsSection';
 import BottomNav from '../components/User(Student)/BottomNav';
 import CompletedEvents from '../components/User(Student)/EventScreenComponents/Completed';
+import CancelledEventsSection from '../components/User(Student)/EventScreenComponents/CancelledEventsSection';
 import { useEvents } from '../contexts/EventContext';
 
 const EventScreen = () => {
@@ -13,6 +14,7 @@ const EventScreen = () => {
     todayEvents, 
     upcomingEvents, 
     completedEvents, 
+    cancelledEvents,
     isLoading, 
     fetchEvents 
   } = useEvents();
@@ -29,6 +31,7 @@ const EventScreen = () => {
         <RecommendedSection events={todayEvents} isLoading={isLoading} />
         <AllEventsSection events={upcomingEvents} isLoading={isLoading} />
         <CompletedEvents events={completedEvents} isLoading={isLoading} />
+        <CancelledEventsSection events={cancelledEvents} isLoading={isLoading} />
       </ScrollView>
       <BottomNav activeTab="Home" />
     </View>
