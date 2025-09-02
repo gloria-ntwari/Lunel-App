@@ -5,24 +5,45 @@ import EventModal from './EventModal';
 import EventActionsModal from './EventActionsModal';
 
 interface Event {
-    id: string;
+    _id: string;
     title: string;
+    description?: string;
     category: string;
     date: Date;
     startTime: Date;
     endTime: Date;
     location: string;
-    image: string | null;
-    isCompleted: boolean;
+    image?: string;
+    maxAttendees?: number;
+    currentAttendees: number;
+    isActive: boolean;
+    isCancelled?: boolean;
+    cancelledAt?: Date;
+    cancelledBy?: {
+        _id: string;
+        name: string;
+        email: string;
+    };
+    createdBy: {
+        _id: string;
+        name: string;
+        email: string;
+    };
+    createdAt: Date;
+    updatedAt: Date;
+    isCompleted?: boolean;
+    isToday?: boolean;
+    isUpcoming?: boolean;
 }
 
 interface CompletedSectionProps {
     completedEvents: Event[];
-    onUpdateEvent: (event: Event) => void;
-    onDeleteEvent: (eventId: string) => void;
+    onUpdateEvent: (event: Event) => Promise<void>;
+    onDeleteEvent: (eventId: string) => Promise<void>;
+    isLoading: boolean;
 }
 
-const CompletedSection = ({ completedEvents, onUpdateEvent, onDeleteEvent }: CompletedSectionProps) => {
+const CompletedSection = ({ completedEvents, onUpdateEvent, onDeleteEvent, isLoading }: CompletedSectionProps) => {
     const [showEventModal, setShowEventModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [showActionsModal, setShowActionsModal] = useState(false);
@@ -35,10 +56,27 @@ const CompletedSection = ({ completedEvents, onUpdateEvent, onDeleteEvent }: Com
         setShowActionsModal(true);
     };
 
-    const handleEditEvent = () => {
-        if (eventForActions) {
-            setSelectedEvent(eventForActions);
-            setShowEventModal(true);
+    const handleSaveEvent = async (eventData: any) => {
+        if (selectedEvent) {
+            // Update existing event
+            await onUpdateEvent({ ...selectedEvent, ...eventData });
+        }
+        setShowEventModal(false);
+    };
+
+    const handleActionPress = async (action: string) => {
+        if (!eventForActions) return;
+
+        switch (action) {
+            case 'edit':
+                setSelectedEvent(eventForActions);
+                setShowActionsModal(false);
+                setShowEventModal(true);
+                break;
+            case 'delete':
+                await handleDeleteEvent();
+                setShowActionsModal(false);
+                break;
         }
     };
 
@@ -52,25 +90,13 @@ const CompletedSection = ({ completedEvents, onUpdateEvent, onDeleteEvent }: Com
                     {
                         text: 'Delete',
                         style: 'destructive',
-                        onPress: () => {
-                            onDeleteEvent(eventForActions.id);
+                        onPress: async () => {
+                            await onDeleteEvent(eventForActions._id);
                         }
                     }
                 ]
             );
         }
-    };
-
-    const handleMarkCompleted = () => {
-
-    };
-
-    const handleSaveEvent = (event: Event) => {
-        if (selectedEvent) {
-            // Update existing event
-            onUpdateEvent(event);
-        }
-        setShowEventModal(false);
     };
 
     const closeActionsModal = () => {
@@ -105,7 +131,7 @@ const CompletedSection = ({ completedEvents, onUpdateEvent, onDeleteEvent }: Com
             >
                 {completedEvents.map((event) => (
                     <TouchableOpacity
-                        key={event.id}
+                        key={event._id}
                         style={styles.card}
                         onPress={() => handleEventPress(event)}
                         activeOpacity={0.8}
@@ -143,11 +169,9 @@ const CompletedSection = ({ completedEvents, onUpdateEvent, onDeleteEvent }: Com
             <EventActionsModal
                 visible={showActionsModal}
                 onClose={closeActionsModal}
-                onEdit={handleEditEvent}
-                onDelete={handleDeleteEvent}
-                onMarkCompleted={handleMarkCompleted}
-                eventTitle={eventForActions?.title || ''}
-                isCompleted={eventForActions?.isCompleted || true}
+                onActionPress={handleActionPress}
+                event={eventForActions}
+                showCancelOption={false}
             />
         </View>
     );

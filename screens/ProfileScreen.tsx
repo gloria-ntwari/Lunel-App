@@ -1,31 +1,75 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BottomNav from '../components/User(Student)/BottomNav';
+import { useAuth } from '../contexts/AuthContext';
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
+  const { user, logout, updateProfile } = useAuth();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [userData, setUserData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
+    name: '',
+    email: '',
     password: '********',
   });
 
   const [formData, setFormData] = useState({ ...userData, confirmPassword: '' });
 
-  const handleSave = () => {
+  // Load user data when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      setUserData({
+        name: user.name,
+        email: user.email,
+        password: '********',
+      });
+      setFormData({
+        name: user.name,
+        email: user.email,
+        password: '********',
+        confirmPassword: '',
+      });
+    }
+  }, [user]);
+
+  const handleSave = async () => {
     // only save if password and confirmPassword match
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      Alert.alert("Error", "Passwords do not match!");
       return;
     }
-    setUserData({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password
-    });
-    setIsEditMode(false);
+
+    if (formData.password.length < 6 && formData.password !== '********') {
+      Alert.alert("Error", "Password must be at least 6 characters long!");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await updateProfile(
+        formData.name,
+        formData.email,
+        formData.password
+      );
+      
+      if (result.success) {
+        setUserData({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password === '********' ? '********' : '********'
+        });
+        setIsEditMode(false);
+        Alert.alert("Success", result.message);
+      } else {
+        Alert.alert("Error", result.message);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to update profile. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -44,9 +88,13 @@ const ProfileScreen = () => {
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: () => {
-            // Navigate to LoginScreen
-            navigation.navigate('Login' as never);
+          onPress: async () => {
+            try {
+              await logout();
+              navigation.navigate('Login' as never);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
           }
         }
       ]
@@ -134,10 +182,13 @@ const ProfileScreen = () => {
                 <Text style={[styles.buttonText, { color: '#6B46C1' }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.button, styles.saveButton]}
+                style={[styles.button, styles.saveButton, isLoading && styles.buttonDisabled]}
                 onPress={handleSave}
+                disabled={isLoading}
               >
-                <Text style={styles.buttonText}>Save</Text>
+                <Text style={styles.buttonText}>
+                  {isLoading ? 'Saving...' : 'Save'}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -258,6 +309,9 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: '#fff',
+  },
+  buttonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
 });
 

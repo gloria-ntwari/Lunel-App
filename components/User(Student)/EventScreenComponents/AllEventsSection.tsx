@@ -26,17 +26,17 @@ interface Event {
   isUpcoming?: boolean;
 }
 
-interface RecommendedSectionProps {
+interface AllEventsSectionProps {
   events: Event[];
   isLoading: boolean;
 }
 
-const RecommendedSection: React.FC<RecommendedSectionProps> = ({ events, isLoading }) => {
+const AllEventsSection: React.FC<AllEventsSectionProps> = ({ events, isLoading }) => {
   if (isLoading) {
     return (
       <View style={styles.recommendedContainer}>
         <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Today's Events 🔥</Text>
+          <Text style={styles.sectionTitle}>All Events 📅</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1a73e8" />
@@ -50,11 +50,11 @@ const RecommendedSection: React.FC<RecommendedSectionProps> = ({ events, isLoadi
     return (
       <View style={styles.recommendedContainer}>
         <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Today's Events 🔥</Text>
+          <Text style={styles.sectionTitle}>All Events</Text>
         </View>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No events today</Text>
-          <Text style={styles.emptyStateSubtext}>Check upcoming events for today's activities</Text>
+          <Text style={styles.emptyStateText}>No upcoming events yet</Text>
+          <Text style={styles.emptyStateSubtext}>Check back later for new events</Text>
         </View>
       </View>
     );
@@ -62,9 +62,9 @@ const RecommendedSection: React.FC<RecommendedSectionProps> = ({ events, isLoadi
 
   return (
     <View style={styles.recommendedContainer}>
-      <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Today's Events 🔥</Text>
-      </View>
+              <View style={styles.header}>
+          <Text style={styles.sectionTitle}>All Events 📅</Text>
+        </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -85,7 +85,7 @@ const RecommendedSection: React.FC<RecommendedSectionProps> = ({ events, isLoadi
               {event.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · 
               {event.startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - 
               {event.endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-            </Text>
+            </Text>                  
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -95,7 +95,7 @@ const RecommendedSection: React.FC<RecommendedSectionProps> = ({ events, isLoadi
 
 const styles = StyleSheet.create({
   recommendedContainer: {
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 4,
   },
   header: {
@@ -210,4 +210,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RecommendedSection;
+export default AllEventsSection;

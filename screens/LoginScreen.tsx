@@ -1,27 +1,67 @@
 import React , {useState} from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Button, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Button, Image, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { FontAwesome } from '@expo/vector-icons';
-
+import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
+  const { login, isLoading } = useAuth();
   const [isPressed, setIsPressed] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    const result = await login(email.trim(), password);
+    
+    if (result.success && result.user) {
+      // Navigate based on user role
+      if (result.user.role === 'super_admin' || result.user.role === 'admin') {
+        navigation.navigate('AdminHome' as never);
+      } else {
+        navigation.navigate('Event' as never);
+      }
+    } else {
+      Alert.alert('Login Failed', result.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>B-Lunder</Text>
       <Text style={styles.subtitle}>Login to your Account</Text>
-      <TextInput style={[styles.input, styles.passwordInput]} placeholder="Email" />
-      <TextInput style={[styles.input, styles.passwordInput]} placeholder="Password" secureTextEntry />
+      <TextInput 
+        style={[styles.input, styles.passwordInput]} 
+        placeholder="Email" 
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      <TextInput 
+        style={[styles.input, styles.passwordInput]} 
+        placeholder="Password" 
+        secureTextEntry 
+        value={password}
+        onChangeText={setPassword}
+      />
       <TouchableOpacity style={styles.forgotPassword} onPress={() => navigation.navigate('ForgotPassword' as never)}>
         <Text style={styles.forgotText}>Forgot Password?</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Event' as never)}>
-        <Text style={styles.buttonText}>Sign In</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.socialIcon} onPress={() => navigation.navigate('AdminHome' as never)}> 
-        <Text style={styles.AdminText}>Admin Login</Text>
+      <TouchableOpacity 
+        style={[styles.button, isLoading && styles.buttonDisabled]} 
+        onPress={handleLogin}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>
+          {isLoading ? 'Signing In...' : 'Sign In'}
+        </Text>
       </TouchableOpacity>
       <Text style={styles.orText}>- Or login in with -</Text>
       <View style={styles.socialContainer}>
@@ -81,6 +121,9 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     paddingVertical: SPACING,
     marginBottom: SPACING,
+  },
+  buttonDisabled: {
+    backgroundColor: '#9CA3AF',
   },
   buttonText: {
     color: 'white',

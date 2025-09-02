@@ -5,25 +5,46 @@ import EventModal from './EventModal';
 import EventActionsModal from './EventActionsModal';
 
 interface Event {
-  id: string;
+  _id: string;
   title: string;
+  description?: string;
   category: string;
   date: Date;
   startTime: Date;
   endTime: Date;
   location: string;
-  image: string | null;
-  isCompleted: boolean;
+  image?: string;
+  maxAttendees?: number;
+  currentAttendees: number;
+  isActive: boolean;
+  isCancelled?: boolean;
+  cancelledAt?: Date;
+  cancelledBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  isCompleted?: boolean;
+  isToday?: boolean;
+  isUpcoming?: boolean;
 }
 
 interface AllSectionProps {
   events: Event[];
-  onUpdateEvent: (event: Event) => void;
-  onDeleteEvent: (eventId: string) => void;
-  onMarkCompleted: (eventId: string) => void;
+  onUpdateEvent: (event: Event) => Promise<void>;
+  onDeleteEvent: (eventId: string) => Promise<void>;
+  onCancelEvent: (eventId: string) => Promise<void>;
+  isLoading: boolean;
 }
 
-const AllSection = ({ events, onUpdateEvent, onDeleteEvent, onMarkCompleted }: AllSectionProps) => {
+const AllSection = ({ events, onUpdateEvent, onDeleteEvent, onCancelEvent, isLoading }: AllSectionProps) => {
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showActionsModal, setShowActionsModal] = useState(false);
@@ -36,10 +57,31 @@ const AllSection = ({ events, onUpdateEvent, onDeleteEvent, onMarkCompleted }: A
     setShowActionsModal(true);
   };
 
-  const handleEditEvent = () => {
-    if (eventForActions) {
-      setSelectedEvent(eventForActions);
-      setShowEventModal(true);
+  const handleSaveEvent = async (eventData: any) => {
+    if (selectedEvent) {
+      // Update existing event
+      await onUpdateEvent({ ...selectedEvent, ...eventData });
+    }
+    setShowEventModal(false);
+  };
+
+  const handleActionPress = async (action: string) => {
+    if (!eventForActions) return;
+
+    switch (action) {
+      case 'edit':
+        setSelectedEvent(eventForActions);
+        setShowActionsModal(false);
+        setShowEventModal(true);
+        break;
+      case 'cancel':
+        await handleCancelEvent();
+        setShowActionsModal(false);
+        break;
+      case 'delete':
+        await handleDeleteEvent();
+        setShowActionsModal(false);
+        break;
     }
   };
 
@@ -53,8 +95,8 @@ const AllSection = ({ events, onUpdateEvent, onDeleteEvent, onMarkCompleted }: A
           {
             text: 'Delete',
             style: 'destructive',
-            onPress: () => {
-              onDeleteEvent(eventForActions.id);
+            onPress: async () => {
+              await onDeleteEvent(eventForActions._id);
             }
           }
         ]
@@ -62,18 +104,23 @@ const AllSection = ({ events, onUpdateEvent, onDeleteEvent, onMarkCompleted }: A
     }
   };
 
-  const handleMarkCompleted = () => {
+  const handleCancelEvent = () => {
     if (eventForActions) {
-      onMarkCompleted(eventForActions.id);
+      Alert.alert(
+        'Cancel Event',
+        `Are you sure you want to cancel "${eventForActions.title}"?`,
+        [
+          { text: 'No', style: 'cancel' },
+          {
+            text: 'Cancel Event',
+            style: 'destructive',
+            onPress: async () => {
+              await onCancelEvent(eventForActions._id);
+            }
+          }
+        ]
+      );
     }
-  };
-
-  const handleSaveEvent = (event: Event) => {
-    if (selectedEvent) {
-      // Update existing event
-      onUpdateEvent(event);
-    }
-    setShowEventModal(false);
   };
 
   const closeActionsModal = () => {
@@ -93,7 +140,7 @@ const AllSection = ({ events, onUpdateEvent, onDeleteEvent, onMarkCompleted }: A
       >
         {events.map((event) => (
           <TouchableOpacity
-            key={event.id}
+            key={event._id}
             style={styles.card}
             onPress={() => handleEventPress(event)}
             activeOpacity={0.8}
@@ -133,11 +180,9 @@ const AllSection = ({ events, onUpdateEvent, onDeleteEvent, onMarkCompleted }: A
       <EventActionsModal
         visible={showActionsModal}
         onClose={closeActionsModal}
-        onEdit={handleEditEvent}
-        onDelete={handleDeleteEvent}
-        onMarkCompleted={handleMarkCompleted}
-        eventTitle={eventForActions?.title || ''}
-        isCompleted={eventForActions?.isCompleted || false}
+        onActionPress={handleActionPress}
+        event={eventForActions}
+        showCancelOption={true}
       />
     </View>
   );

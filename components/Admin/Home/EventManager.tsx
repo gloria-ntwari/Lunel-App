@@ -1,130 +1,127 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import TodaySection from './TodaySection';
 import AllSection from './AllSection';
 import CompletedSection from './CompletedSection';
-
-interface Event {
-    id: string;
-    title: string;
-    category: string;
-    date: Date;
-    startTime: Date;
-    endTime: Date;
-    location: string;
-    image: string | null;
-    isCompleted: boolean;
-}
+import CancelledSection from './CancelledSection';
+import { useEvents } from '../../../contexts/EventContext';
 
 const EventManager = () => {
-    const [allEvents, setAllEvents] = useState<Event[]>([]);
+    const { 
+        todayEvents, 
+        upcomingEvents, 
+        completedEvents, 
+        cancelledEvents,
+        isLoading, 
+        fetchEvents,
+        createEvent,
+        updateEvent,
+        deleteEvent,
+        cancelEvent
+    } = useEvents();
 
-    // Initialize with some sample events
+    // Fetch events when component mounts
     useEffect(() => {
-        const sampleEvents: Event[] = [
-            {
-                id: '1',
-                title: 'KAZKA band concert in Kyiv',
-                category: 'Concert',
-                date: new Date('2024-09-15'),
-                startTime: new Date('2024-09-15T08:00:00'),
-                endTime: new Date('2024-09-15T11:00:00'),
-                location: 'Kyiv Concert Hall',
-                image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800',
-                isCompleted: false
-            },
-            {
-                id: '2',
-                title: 'Theater Performance',
-                category: 'Theater',
-                date: new Date('2024-09-16'),
-                startTime: new Date('2024-09-16T14:00:00'),
-                endTime: new Date('2024-09-16T16:00:00'),
-                location: 'National Theater',
-                image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800',
-                isCompleted: false
-            },
-            {
-                id: '3',
-                title: 'Sports Tournament',
-                category: 'Sports',
-                date: new Date('2024-09-17'),
-                startTime: new Date('2024-09-17T10:00:00'),
-                endTime: new Date('2024-09-17T18:00:00'),
-                location: 'Sports Complex',
-                image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800',
-                isCompleted: false
-            },
-            {
-                id: '4',
-                title: 'Art Exhibition',
-                category: 'Exhibition',
-                date: new Date('2024-09-18'),
-                startTime: new Date('2024-09-18T09:00:00'),
-                endTime: new Date('2024-09-18T17:00:00'),
-                location: 'Art Gallery',
-                image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800',
-                isCompleted: false
-            }
-        ];
-        setAllEvents(sampleEvents);
+        fetchEvents();
     }, []);
 
-    const handleAddEvent = (newEvent: Event) => {
-        const eventWithId = { ...newEvent, id: Date.now().toString(), isCompleted: false };
-        setAllEvents(prev => [...prev, eventWithId]);
+    const handleAddEvent = async (newEvent: any) => {
+        try {
+            // Convert Date objects to ISO strings for API
+            const eventData = {
+                ...newEvent,
+                date: newEvent.date instanceof Date ? newEvent.date.toISOString() : newEvent.date,
+                startTime: newEvent.startTime instanceof Date ? newEvent.startTime.toISOString() : newEvent.startTime,
+                endTime: newEvent.endTime instanceof Date ? newEvent.endTime.toISOString() : newEvent.endTime,
+            };
+
+            const result = await createEvent(eventData);
+            if (result.success) {
+                // Events will be automatically updated in context
+                console.log('Event created successfully');
+            } else {
+                console.error('Failed to create event:', result.message);
+            }
+        } catch (error) {
+            console.error('Error creating event:', error);
+        }
     };
 
-    const handleUpdateEvent = (updatedEvent: Event) => {
-        setAllEvents(prev => prev.map(event =>
-            event.id === updatedEvent.id ? updatedEvent : event
-        ));
+    const handleUpdateEvent = async (updatedEvent: any) => {
+        try {
+            // Convert Date objects to ISO strings for API
+            const eventData = {
+                ...updatedEvent,
+                date: updatedEvent.date instanceof Date ? updatedEvent.date.toISOString() : updatedEvent.date,
+                startTime: updatedEvent.startTime instanceof Date ? updatedEvent.startTime.toISOString() : updatedEvent.startTime,
+                endTime: updatedEvent.endTime instanceof Date ? updatedEvent.endTime.toISOString() : updatedEvent.endTime,
+            };
+
+            const result = await updateEvent(updatedEvent._id, eventData);
+            if (result.success) {
+                console.log('Event updated successfully');
+            } else {
+                console.error('Failed to update event:', result.message);
+            }
+        } catch (error) {
+            console.error('Error updating event:', error);
+        }
     };
 
-    const handleDeleteEvent = (eventId: string) => {
-        setAllEvents(prev => prev.filter(event => event.id !== eventId));
+    const handleDeleteEvent = async (eventId: string) => {
+        try {
+            const result = await deleteEvent(eventId);
+            if (result.success) {
+                console.log('Event deleted successfully');
+            } else {
+                console.error('Failed to delete event:', result.message);
+            }
+        } catch (error) {
+            console.error('Error deleting event:', error);
+        }
     };
 
-    const handleMarkCompleted = (eventId: string) => {
-        setAllEvents(prev => prev.map(event =>
-            event.id === eventId
-                ? { ...event, isCompleted: true }
-                : event
-        ));
+    const handleCancelEvent = async (eventId: string) => {
+        try {
+            const result = await cancelEvent(eventId);
+            if (result.success) {
+                console.log('Event cancelled successfully');
+            } else {
+                console.error('Failed to cancel event:', result.message);
+            }
+        } catch (error) {
+            console.error('Error cancelling event:', error);
+        }
     };
-
-    const handleMarkNotCompleted = (eventId: string) => {
-        setAllEvents(prev => prev.map(event =>
-            event.id === eventId
-                ? { ...event, isCompleted: false }
-                : event
-        ));
-    };
-
-    // Filter events for different sections
-    // Show all active events in Today's Events section (not filtered by date)
-    const activeEvents = allEvents.filter(event => !event.isCompleted);
-    const completedEvents = allEvents.filter(event => event.isCompleted);
 
     return (
         <View style={styles.container}>
             <TodaySection
-                events={activeEvents}
+                events={todayEvents}
                 onAddEvent={handleAddEvent}
                 onUpdateEvent={handleUpdateEvent}
                 onDeleteEvent={handleDeleteEvent}
-                onMarkCompleted={handleMarkCompleted}
+                onCancelEvent={handleCancelEvent}
+                isLoading={isLoading}
             />
             <AllSection
-                events={activeEvents}
+                events={upcomingEvents}
                 onUpdateEvent={handleUpdateEvent}
                 onDeleteEvent={handleDeleteEvent}
-                onMarkCompleted={handleMarkCompleted}
+                onCancelEvent={handleCancelEvent}
+                isLoading={isLoading}
             />
             <CompletedSection
                 completedEvents={completedEvents}
                 onUpdateEvent={handleUpdateEvent}
                 onDeleteEvent={handleDeleteEvent}
+                isLoading={isLoading}
+            />
+            <CancelledSection
+                cancelledEvents={cancelledEvents}
+                onUpdateEvent={handleUpdateEvent}
+                onDeleteEvent={handleDeleteEvent}
+                isLoading={isLoading}
             />
         </View>
     );

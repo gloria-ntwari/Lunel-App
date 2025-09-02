@@ -5,23 +5,44 @@ import EventModal from './EventModal';
 import EventActionsModal from './EventActionsModal';
 
 interface Event {
-  id: string;
+  _id: string;
   title: string;
+  description?: string;
   category: string;
   date: Date;
   startTime: Date;
   endTime: Date;
   location: string;
-  image: string | null;
-  isCompleted: boolean;
+  image?: string;
+  maxAttendees?: number;
+  currentAttendees: number;
+  isActive: boolean;
+  isCancelled?: boolean;
+  cancelledAt?: Date;
+  cancelledBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  isCompleted?: boolean;
+  isToday?: boolean;
+  isUpcoming?: boolean;
 }
 
 interface TodaySectionProps {
   events: Event[];
-  onAddEvent: (event: Event) => void;
-  onUpdateEvent: (event: Event) => void;
-  onDeleteEvent: (eventId: string) => void;
-  onMarkCompleted: (eventId: string) => void;
+  onAddEvent: (event: any) => Promise<void>;
+  onUpdateEvent: (event: Event) => Promise<void>;
+  onDeleteEvent: (eventId: string) => Promise<void>;
+  onCancelEvent: (eventId: string) => Promise<void>;
+  isLoading: boolean;
 }
 
 const TodaySection = ({
@@ -29,7 +50,8 @@ const TodaySection = ({
   onAddEvent,
   onUpdateEvent,
   onDeleteEvent,
-  onMarkCompleted
+  onCancelEvent,
+  isLoading
 }: TodaySectionProps) => {
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -43,27 +65,40 @@ const TodaySection = ({
     setShowEventModal(true);
   };
 
-  const handleSaveEvent = (event: Event) => {
+  const handleSaveEvent = async (eventData: any) => {
     if (selectedEvent) {
       // Update existing event
-      onUpdateEvent(event);
+      await onUpdateEvent({ ...selectedEvent, ...eventData });
     } else {
       // Add new event
-      onAddEvent(event);
+      await onAddEvent(eventData);
     }
     setShowEventModal(false);
+  };
+
+  const handleActionPress = async (action: string) => {
+    if (!eventForActions) return;
+
+    switch (action) {
+      case 'edit':
+        setSelectedEvent(eventForActions);
+        setShowActionsModal(false);
+        setShowEventModal(true);
+        break;
+      case 'cancel':
+        await handleCancelEvent();
+        setShowActionsModal(false);
+        break;
+      case 'delete':
+        await handleDeleteEvent();
+        setShowActionsModal(false);
+        break;
+    }
   };
 
   const handleEventPress = (event: Event) => {
     setEventForActions(event);
     setShowActionsModal(true);
-  };
-
-  const handleEditEvent = () => {
-    if (eventForActions) {
-      setSelectedEvent(eventForActions);
-      setShowEventModal(true);
-    }
   };
 
   const handleDeleteEvent = () => {
@@ -76,8 +111,8 @@ const TodaySection = ({
           {
             text: 'Delete',
             style: 'destructive',
-            onPress: () => {
-              onDeleteEvent(eventForActions.id);
+            onPress: async () => {
+              await onDeleteEvent(eventForActions._id);
             }
           }
         ]
@@ -85,9 +120,22 @@ const TodaySection = ({
     }
   };
 
-  const handleMarkCompleted = () => {
+  const handleCancelEvent = () => {
     if (eventForActions) {
-      onMarkCompleted(eventForActions.id);
+      Alert.alert(
+        'Cancel Event',
+        `Are you sure you want to cancel "${eventForActions.title}"?`,
+        [
+          { text: 'No', style: 'cancel' },
+          {
+            text: 'Cancel Event',
+            style: 'destructive',
+            onPress: async () => {
+              await onCancelEvent(eventForActions._id);
+            }
+          }
+        ]
+      );
     }
   };
 
@@ -113,7 +161,7 @@ const TodaySection = ({
       >
         {events.map((event) => (
           <TouchableOpacity
-            key={event.id}
+            key={event._id}
             style={styles.card}
             onPress={() => handleEventPress(event)}
             activeOpacity={0.8}
@@ -150,11 +198,9 @@ const TodaySection = ({
       <EventActionsModal
         visible={showActionsModal}
         onClose={closeActionsModal}
-        onEdit={handleEditEvent}
-        onDelete={handleDeleteEvent}
-        onMarkCompleted={handleMarkCompleted}
-        eventTitle={eventForActions?.title || ''}
-        isCompleted={eventForActions?.isCompleted || false}
+        onActionPress={handleActionPress}
+        event={eventForActions}
+        showCancelOption={true}
       />
     </View>
   );

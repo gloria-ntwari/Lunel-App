@@ -1,30 +1,93 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 
-const CompletedEvents = () => {
+interface Event {
+  _id: string;
+  title: string;
+  description?: string;
+  category: string;
+  date: Date;
+  startTime: Date;
+  endTime: Date;
+  location: string;
+  image?: string;
+  maxAttendees?: number;
+  currentAttendees: number;
+  isActive: boolean;
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  isCompleted?: boolean;
+  isToday?: boolean;
+  isUpcoming?: boolean;
+}
+
+interface CompletedEventsProps {
+  events: Event[];
+  isLoading: boolean;
+}
+
+const CompletedEvents: React.FC<CompletedEventsProps> = ({ events, isLoading }) => {
+  if (isLoading) {
+    return (
+      <View style={styles.weekEventsContainer}>
+        <View style={styles.header}>
+          <Text style={styles.sectionTitle}>Completed Events ✅</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1a73e8" />
+          <Text style={styles.loadingText}>Loading events...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <View style={styles.weekEventsContainer}>
+        <View style={styles.header}>
+          <Text style={styles.sectionTitle}>Completed Events ✅</Text>
+        </View>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No completed events yet</Text>
+          <Text style={styles.emptyStateSubtext}>Events will appear here once they are completed</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.weekEventsContainer}>
-      <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Completed events</Text>
-      </View>
+              <View style={styles.header}>
+          <Text style={styles.sectionTitle}>Completed Events ✅</Text>
+        </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.events}
       >
-        {[1, 2, 3, 4].map((i) => (
-                  <View key={i} style={styles.card}>
-                    <Image
-                      source={{ uri: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800' }}
-                      style={styles.cardImage}
-                    />
-                    <View style={styles.cardTagRow}>
-                      <Text style={styles.cardTag}>concert</Text>
-                    </View>
-                    <Text style={styles.cardTitle} numberOfLines={2}>KAZKA band concert in Kyiv</Text>
-                    <Text style={styles.cardMeta}>15 Sep  ·  8:00AM - 11:00AM</Text>
-                  </View>
-                ))}
+        {events.map((event) => (
+          <TouchableOpacity key={event._id} style={styles.card} activeOpacity={0.8}>
+            <Image
+              source={{ uri: event.image || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800' }}
+              style={[styles.cardImage, { opacity: 0.7 }]}
+            />
+            <View style={styles.cardTagRow}>
+              <Text style={styles.cardTag}>{event.category.toLowerCase()}</Text>
+            </View>
+            <Text style={styles.cardTitle} numberOfLines={2}>{event.title}</Text>
+            <Text style={styles.cardLocation} numberOfLines={1}>📍 {event.location}</Text>
+            <Text style={styles.cardMeta}>
+              {event.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · 
+              {event.startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - 
+              {event.endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </View>
   );
@@ -34,7 +97,6 @@ const styles = StyleSheet.create({
   weekEventsContainer: {
     paddingTop: 8,
     paddingBottom: 16,
-
   },
   header: {
     flexDirection: 'row',
@@ -77,7 +139,7 @@ const styles = StyleSheet.create({
   },
   cardTag: {
     backgroundColor: 'transparent',
-    borderColor:'white',
+    borderColor: 'white',
     borderWidth: 1,
     color: '#fff',
     paddingHorizontal: 8,
@@ -101,12 +163,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 10,
   },
+  cardLocation: {
+    color: '#666',
+    fontSize: 12,
+    paddingHorizontal: 12,
+    paddingTop: 4,
+  },
   cardMeta: {
     color: '#444346ff',
     fontSize: 12,
     paddingHorizontal: 12,
     paddingBottom: 12,
     paddingTop: 4,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+    fontSize: 14,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: 10,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 5,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
 });
 

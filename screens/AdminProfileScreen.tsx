@@ -1,19 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import BottomNav from '../components/Admin/BottomNav';
+import { useAuth } from '../contexts/AuthContext';
 
 const AdminProfileScreen = () => {
   const navigation = useNavigation();
-  const [adminInfo] = useState({
-    name: 'Gloria Admin',
-    email: 'gloria.admin@lunel.com',
-    role: 'Super Admin',
+  const { user, logout, refreshUserData } = useAuth();
+  const [adminInfo, setAdminInfo] = useState({
+    name: '',
+    email: '',
+    role: '',
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400',
     joinDate: 'January 2024',
     permissions: ['Manage Events', 'Manage Meals', 'Manage Admins']
   });
+
+  // Load user data when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      setAdminInfo(prev => ({
+        ...prev,
+        name: user.name,
+        email: user.email,
+        role: user.role === 'super_admin' ? 'Super Admin' : 
+              user.role === 'admin' ? 'Admin' : 'User',
+      }));
+    }
+  }, [user]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -22,9 +37,15 @@ const AdminProfileScreen = () => {
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Logout', style: 'destructive', onPress: () => {
-            // Navigate to LoginScreen
-            navigation.navigate('Login' as never);
+          text: 'Logout', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              await logout();
+              navigation.navigate('Login' as never);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
           }
         }
       ]

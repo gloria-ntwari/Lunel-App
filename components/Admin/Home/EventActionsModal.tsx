@@ -5,21 +5,17 @@ import { MaterialIcons } from '@expo/vector-icons';
 interface EventActionsModalProps {
     visible: boolean;
     onClose: () => void;
-    onEdit: () => void;
-    onDelete: () => void;
-    onMarkCompleted: () => void;
-    eventTitle: string;
-    isCompleted: boolean;
+    onActionPress: (action: string) => void;
+    event: any;
+    showCancelOption?: boolean;
 }
 
 const EventActionsModal = ({
     visible,
     onClose,
-    onEdit,
-    onDelete,
-    onMarkCompleted,
-    eventTitle,
-    isCompleted
+    onActionPress,
+    event,
+    showCancelOption = true
 }: EventActionsModalProps) => {
     return (
         <Modal
@@ -39,14 +35,13 @@ const EventActionsModal = ({
                                 </TouchableOpacity>
                             </View>
 
-                            <Text style={styles.eventTitle}>{eventTitle}</Text>
+                            <Text style={styles.eventTitle}>{event?.title || 'Event'}</Text>
 
                             <View style={styles.actionsContainer}>
                                 <TouchableOpacity
                                     style={[styles.actionButton, styles.editButton]}
                                     onPress={() => {
-                                        onEdit();
-                                        onClose();
+                                        onActionPress('edit');
                                     }}
                                     activeOpacity={0.7}
                                 >
@@ -54,25 +49,23 @@ const EventActionsModal = ({
                                     <Text style={styles.actionButtonText}>Edit Event</Text>
                                 </TouchableOpacity>
 
-                                {!isCompleted && (
+                                {showCancelOption && !event?.isCancelled && (
                                     <TouchableOpacity
-                                        style={[styles.actionButton, styles.completeButton]}
+                                        style={[styles.actionButton, styles.cancelButton]}
                                         onPress={() => {
-                                            onMarkCompleted();
-                                            onClose();
+                                            onActionPress('cancel');
                                         }}
                                         activeOpacity={0.7}
                                     >
-                                        <MaterialIcons name="check-circle" size={20} color="#fff" />
-                                        <Text style={styles.actionButtonText}>Mark as Completed</Text>
+                                        <MaterialIcons name="cancel" size={20} color="#fff" />
+                                        <Text style={styles.actionButtonText}>Cancel Event</Text>
                                     </TouchableOpacity>
                                 )}
 
                                 <TouchableOpacity
                                     style={[styles.actionButton, styles.deleteButton]}
                                     onPress={() => {
-                                        onDelete();
-                                        onClose();
+                                        onActionPress('delete');
                                     }}
                                     activeOpacity={0.7}
                                 >
@@ -142,8 +135,8 @@ const styles = StyleSheet.create({
     editButton: {
         backgroundColor: '#5b1ab2',
     },
-    completeButton: {
-        backgroundColor: '#27ae60',
+    cancelButton: {
+        backgroundColor: '#e74c3c',
     },
     deleteButton: {
         backgroundColor: '#e74c3c',
