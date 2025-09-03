@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Modal, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AdminCategoryTabs from './AdminCategoryTabs';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEvents } from '../../../contexts/EventContext';
 import { useCategories } from '../../../contexts/CategoryContext';
 
 let LinearGradient: any;
@@ -16,11 +18,14 @@ interface HeaderProps {
 }
 
 const Header = ({ greeting }: HeaderProps) => {
+  const { user } = useAuth();
+  const { setSearchQuery } = useEvents();
   const { categories, fetchAdminCategories, createCategory, updateCategory, deleteCategory, isLoading } = useCategories();
   const [activeCategory, setActiveCategory] = useState('All events');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
+  const [search, setSearch] = useState('');
 
   // Fetch categories when component mounts
   useEffect(() => {
@@ -109,7 +114,7 @@ const Header = ({ greeting }: HeaderProps) => {
       <View style={styles.topRow}>
         <TouchableOpacity>
           <View style={styles.locationContainer}>
-            <Text style={styles.locationText}>{greeting}</Text>
+            <Text style={styles.locationText}>{user ? `Hello, ${user.name}` : greeting}</Text>
           </View>
         </TouchableOpacity>
         <Ionicons name="notifications-outline" size={22} color="#fff" />
@@ -122,6 +127,8 @@ const Header = ({ greeting }: HeaderProps) => {
             style={styles.searchBar}
             placeholder="Search an event"
             placeholderTextColor="#cfc5e6"
+            value={search}
+            onChangeText={(t) => { setSearch(t); setSearchQuery(t); }}
           />
         </View>
         <TouchableOpacity style={styles.filterButton}>

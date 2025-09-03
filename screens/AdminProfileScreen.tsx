@@ -4,10 +4,13 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import BottomNav from '../components/Admin/BottomNav';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
+import { API_CONFIG } from '../config/api';
 
 const AdminProfileScreen = () => {
   const navigation = useNavigation();
   const { user, logout, refreshUserData } = useAuth();
+  const [stats, setStats] = useState({ events: 0, meals: 0, users: 0, admins: 0, students: 0 });
   const [adminInfo, setAdminInfo] = useState({
     name: '',
     email: '',
@@ -24,9 +27,20 @@ const AdminProfileScreen = () => {
         ...prev,
         name: user.name,
         email: user.email,
-        role: user.role === 'super_admin' ? 'Super Admin' : 
-              user.role === 'admin' ? 'Admin' : 'User',
+        role: user.role === 'super_admin' ? 'Super Admin' :
+              user.role === 'admin' ? 'Admin' :
+              user.role === 'event_manager' ? 'Event Manager' :
+              user.role === 'meal_coordinator' ? 'Meal Coordinator' : 'User',
+        permissions: user.role === 'super_admin' ? ['Manage Events','Manage Meals','Manage Admins'] :
+                     user.role === 'admin' ? ['Manage Events','Manage Meals'] :
+                     user.role === 'event_manager' ? ['Manage Events'] :
+                     user.role === 'meal_coordinator' ? ['Manage Meals'] : [],
       }));
+      // load stats
+      axios.get(`${API_CONFIG.BASE_URL}/stats/overview`).then(res => {
+        const d = res.data?.data;
+        if (d) setStats(d);
+      }).catch(() => {});
     }
   }, [user]);
 
@@ -142,20 +156,24 @@ const AdminProfileScreen = () => {
           <Text style={styles.sectionTitle}>Quick Stats</Text>
           <View style={styles.statsContainer}>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>24</Text>
+              <Text style={styles.statNumber}>{stats.events}</Text>
               <Text style={styles.statLabel}>Events</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>7</Text>
+              <Text style={styles.statNumber}>{stats.meals}</Text>
               <Text style={styles.statLabel}>Meal Plans</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>156</Text>
+              <Text style={styles.statNumber}>{stats.users}</Text>
               <Text style={styles.statLabel}>Users</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>8</Text>
+              <Text style={styles.statNumber}>{stats.admins}</Text>
               <Text style={styles.statLabel}>Admins</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{stats.students}</Text>
+              <Text style={styles.statLabel}>Students</Text>
             </View>
           </View>
         </View>

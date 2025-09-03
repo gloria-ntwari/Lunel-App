@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import CategoryTabs from './CategoryTabs';
 import NotificationModal from '../NotificationModal';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useNotifications } from '../../../contexts/NotificationsContext';
+import { useEvents } from '../../../contexts/EventContext';
 
 let LinearGradient: any;
 try {
@@ -18,61 +21,30 @@ interface HeaderProps {
 }
 
 const Header = ({ greeting }: HeaderProps) => {
+  const { user } = useAuth();
+  const { notifications, unreadCount, fetchNotifications, markAsRead } = useNotifications();
+  const { setSearchQuery } = useEvents();
   const [notificationModalVisible, setNotificationModalVisible] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: '1',
-      title: 'New Event Added',
-      message: 'A new event "Tech Conference 2024" has been added to your calendar',
-      type: 'event' as const,
-      timestamp: '2 hours ago',
-      isRead: false,
-    },
-    {
-      id: '2',
-      title: 'Event Reminder',
-      message: 'Your event "Team Meeting" starts in 30 minutes',
-      type: 'reminder' as const,
-      timestamp: '1 hour ago',
-      isRead: false,
-    },
-    {
-      id: '3',
-      title: 'Event Update',
-      message: 'The venue for "Annual Party" has been changed to Grand Hall',
-      type: 'update' as const,
-      timestamp: '3 hours ago',
-      isRead: true,
-    },
-    {
-      id: '4',
-      title: 'New Event Category',
-      message: 'A new category "Workshops" has been added to help organize your events',
-      type: 'update' as const,
-      timestamp: '1 day ago',
-      isRead: true,
-    },
-  ]);
+  const [search, setSearch] = useState('');
 
-  const handleNotificationPress = () => {
-    setNotificationModalVisible(true);
-  };
+  useEffect(() => { fetchNotifications(); }, []);
+
+  const handleNotificationPress = () => { setNotificationModalVisible(true); };
 
   const handleCloseNotificationModal = () => {
     setNotificationModalVisible(false);
   };
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
-  };
+  const handleMarkAsRead = (id: string) => { markAsRead(id); };
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const modalNotifications = notifications.map(n => ({
+    id: n._id,
+    title: n.title,
+    message: n.message,
+    type: n.type === 'event_created' ? 'event' : 'update',
+    timestamp: new Date(n.createdAt).toLocaleString(),
+    isRead: n.isRead,
+  }));
 
   return (
     <>
@@ -85,7 +57,7 @@ const Header = ({ greeting }: HeaderProps) => {
         <View style={styles.topRow}>
           <TouchableOpacity>
             <View style={styles.locationContainer}>
-              <Text style={styles.locationText}>{greeting}</Text>
+              <Text style={styles.locationText}>{user ? `Hello, ${user.name}` : greeting}</Text>
             </View>
           </TouchableOpacity>
 
@@ -111,6 +83,11 @@ const Header = ({ greeting }: HeaderProps) => {
               style={styles.searchBar}
               placeholder="Search an event"
               placeholderTextColor="#cfc5e6"
+              value={search}
+              onChangeText={(t) => {
+                setSearch(t);
+                setSearchQuery(t);
+              }}
             />
           </View>
           <TouchableOpacity style={styles.filterButton}>
@@ -125,7 +102,7 @@ const Header = ({ greeting }: HeaderProps) => {
       <NotificationModal
         visible={notificationModalVisible}
         onClose={handleCloseNotificationModal}
-        notifications={notifications}
+        notifications={modalNotifications as any}
         onMarkAsRead={handleMarkAsRead}
       />
     </>

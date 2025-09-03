@@ -30,6 +30,8 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/meals', require('./routes/meals'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/stats', require('./routes/stats'));
 app.use('/api/admins', require('./routes/admins'));
 
 // Health check endpoint

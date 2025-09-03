@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import Header from '../components/User(Student)/EventScreenComponents/Header';
+import { useAuth } from '../contexts/AuthContext';
 import CategoryTabs from '../components/User(Student)/EventScreenComponents/CategoryTabs';
 import RecommendedSection from '../components/User(Student)/EventScreenComponents/RecommendedSection';
 import AllEventsSection from '../components/User(Student)/EventScreenComponents/AllEventsSection';
@@ -18,6 +19,7 @@ const EventScreen = () => {
     isLoading, 
     fetchEvents 
   } = useEvents();
+  const { user } = useAuth();
 
   // Fetch events when component mounts
   useEffect(() => {
@@ -27,7 +29,7 @@ const EventScreen = () => {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
-        <Header greeting="Hello, Gloria" />
+        <Header greeting={`Hello, ${user?.name || 'Guest'}`} />
         <RecommendedSection events={todayEvents} isLoading={isLoading} />
         <AllEventsSection events={upcomingEvents} isLoading={isLoading} />
         <CompletedEvents events={completedEvents} isLoading={isLoading} />

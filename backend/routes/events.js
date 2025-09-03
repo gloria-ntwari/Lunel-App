@@ -2,6 +2,7 @@ const express = require('express');
 const Event = require('../models/Event');
 const { auth, requireRole } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
+const Notification = require('../models/Notification');
 
 const router = express.Router();
 
@@ -165,6 +166,15 @@ router.post('/', auth, requireRole(['admin', 'super_admin', 'event_manager']), v
     const populatedEvent = await Event.findById(event._id)
       .populate('createdBy', 'name email');
 
+    // Create notification for event creation
+    try {
+      await Notification.create({
+        title: 'New event added',
+        message: `${req.body.title} was added`,
+        type: 'event_created',
+      });
+    } catch (e) { console.warn('Notify create failed', e.message); }
+
     res.status(201).json({
       success: true,
       message: 'Event created successfully',
@@ -283,6 +293,15 @@ router.patch('/:id/cancel', auth, requireRole(['admin', 'super_admin', 'event_ma
       },
       { new: true, runValidators: true }
     ).populate('createdBy', 'name email');
+
+    // Create notification for event cancellation
+    try {
+      await Notification.create({
+        title: 'Event cancelled',
+        message: `${updatedEvent.title} was cancelled`,
+        type: 'event_cancelled',
+      });
+    } catch (e) { console.warn('Notify cancel failed', e.message); }
 
     res.json({
       success: true,

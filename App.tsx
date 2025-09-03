@@ -7,6 +7,7 @@ import { EventProvider } from './contexts/EventContext';
 import { CategoryProvider } from './contexts/CategoryContext';
 import { CalendarProvider } from './contexts/CalendarContext';
 import { MealProvider } from './contexts/MealContext';
+import { NotificationsProvider } from './contexts/NotificationsContext';
 
 export default function App() {
   return (
@@ -15,9 +16,11 @@ export default function App() {
         <CategoryProvider>
           <CalendarProvider>
             <MealProvider>
-              <NavigationContainer>
-                <AppNavigator />
-              </NavigationContainer>
+              <NotificationsProvider>
+                <NavigationContainer>
+                  <AppNavigator />
+                </NavigationContainer>
+              </NotificationsProvider>
             </MealProvider>
           </CalendarProvider>
         </CategoryProvider>

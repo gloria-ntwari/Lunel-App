@@ -40,6 +40,7 @@ interface Event {
 
 interface EventContextType {
   events: Event[];
+  filteredEvents: Event[];
   todayEvents: Event[];
   upcomingEvents: Event[];
   completedEvents: Event[];
@@ -47,6 +48,7 @@ interface EventContextType {
   isLoading: boolean;
   error: string | null;
   fetchEvents: (filter?: string, category?: string) => Promise<void>;
+  setSearchQuery: (q: string) => void;
   createEvent: (eventData: Partial<Event>) => Promise<{ success: boolean; message: string; event?: Event }>;
   updateEvent: (eventId: string, eventData: Partial<Event>) => Promise<{ success: boolean; message: string; event?: Event }>;
   deleteEvent: (eventId: string) => Promise<{ success: boolean; message: string }>;
@@ -62,6 +64,7 @@ interface EventProviderProps {
 
 export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
   const [events, setEvents] = useState<Event[]>([]);
+  const [searchQuery, setSearchQueryState] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,6 +73,12 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
   const upcomingEvents = events.filter(event => event.isUpcoming && !event.isCancelled);
   const completedEvents = events.filter(event => event.isCompleted && !event.isCancelled);
   const cancelledEvents = events.filter(event => event.isCancelled);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredEvents = !normalizedQuery ? events : events.filter(e => {
+    const hay = `${e.title} ${e.location} ${e.category}`.toLowerCase();
+    return hay.includes(normalizedQuery);
+  });
 
   const fetchEvents = async (filter?: string, category?: string) => {
     try {
@@ -242,6 +251,7 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
 
   const value: EventContextType = {
     events,
+    filteredEvents,
     todayEvents,
     upcomingEvents,
     completedEvents,
@@ -249,6 +259,7 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
     isLoading,
     error,
     fetchEvents,
+    setSearchQuery: setSearchQueryState,
     createEvent,
     updateEvent,
     deleteEvent,
