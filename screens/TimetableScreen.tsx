@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format, addDays, startOfWeek } from 'date-fns';
 import BottomNav from '../components/User(Student)/BottomNav';
 import Header from '../components/User(Student)/Timetable/Header';
+import { useMeals } from '../contexts/MealContext';
 
 // Define types for our data
 interface Meal {
@@ -16,46 +17,8 @@ interface WeeklyMenu {
     [key: string]: Meal;
 }
 
-// Mock data for the weekly menu
-const weeklyMenu: WeeklyMenu = {
-    'Monday': {
-        breakfast: 'Oatmeal with fruits',
-        lunch: 'Grilled chicken with rice',
-        dinner: 'Vegetable pasta'
-    },
-    'Tuesday': {
-        breakfast: 'Yogurt with granola',
-        lunch: 'Fish with quinoa',
-        dinner: 'Vegetable stir-fry'
-    },
-    'Wednesday': {
-        breakfast: 'Avocado toast',
-        lunch: 'Beef burger with sweet potato fries',
-        dinner: 'Chicken Caesar salad'
-    },
-    'Thursday': {
-        breakfast: 'Smoothie bowl',
-        lunch: 'Pasta carbonara',
-        dinner: 'Grilled salmon with vegetables'
-    },
-    'Friday': {
-        breakfast: 'Pancakes with maple syrup',
-        lunch: 'Chicken wrap with salad',
-        dinner: 'Pizza night'
-    },
-    'Saturday': {
-        breakfast: 'Full English breakfast',
-        lunch: 'BBQ ribs with corn',
-        dinner: 'Sushi platter'
-    },
-    'Sunday': {
-        breakfast: 'French toast',
-        lunch: 'Roast dinner',
-        dinner: 'Soup and sandwiches'
-    }
-};
-
 const TimetableScreen = () => {
+    const { meals, isLoading, fetchMeals } = useMeals();
     const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
         startOfWeek(new Date(), { weekStartsOn: 1 }) // Monday
     );
@@ -73,67 +36,97 @@ const TimetableScreen = () => {
 
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+    // Fetch meals for the current week
+    useEffect(() => {
+        fetchMeals('all');
+    }, [currentWeekStart]);
+
+    // Group meals by day
+    const getMealsForDay = (dayIndex: number) => {
+        const dayDate = weekDays[dayIndex];
+        const dayStart = new Date(dayDate);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayDate);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const dayName = dayNames[dayIndex];
+        return meals.filter((meal: any) => meal.day === dayName);
+    };
+
+    // Get meal by type for a specific day
+    const getMealByType = (dayIndex: number, mealType: string) => {
+        const dayMeals = getMealsForDay(dayIndex);
+        const meal = dayMeals.find((m: any) => m.mealType === mealType);
+        return meal ? meal.menu : 'No meal scheduled';
+    };
+
     return (
         <View style={styles.container}>
-            <ScrollView style={styles.scrollView}>
+                        <ScrollView style={styles.scrollView}>
                 <Header greeting="Weekly Menu" />
 
-                {/* Week Navigation */}
-                <View style={styles.weekNavigation}>
-                    <TouchableOpacity
-                        style={styles.navButton}
-                        onPress={() => navigateWeek('prev')}
-                    >
-                        <Ionicons name="chevron-back" size={24} color="#f96c3d" />
-                    </TouchableOpacity>
+                {isLoading ? (
+                    <View style={styles.loadingContainer}>
+                        <Text style={styles.loadingText}>Loading meals...</Text>
+                    </View>
+                ) : (
+                    <>
+                        {/* Week Navigation */}
+                        <View style={styles.weekNavigation}>
+                            <TouchableOpacity
+                                style={styles.navButton}
+                                onPress={() => navigateWeek('prev')}
+                            >
+                                <Ionicons name="chevron-back" size={24} color="#f96c3d" />
+                            </TouchableOpacity>
 
-                    <Text style={styles.weekText}>
-                        {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
-                    </Text>
+                            <Text style={styles.weekText}>
+                                {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
+                            </Text>
 
-                    <TouchableOpacity
-                        style={styles.navButton}
-                        onPress={() => navigateWeek('next')}
-                    >
-                        <Ionicons name="chevron-forward" size={24} color="#f96c3d" />
-                    </TouchableOpacity>
-                </View>
+                            <TouchableOpacity
+                                style={styles.navButton}
+                                onPress={() => navigateWeek('next')}
+                            >
+                                <Ionicons name="chevron-forward" size={24} color="#f96c3d" />
+                            </TouchableOpacity>
+                        </View>
 
-                {/* Weekly Menu */}
-                <View style={styles.weekContainer}>
-                    {weekDays.map((day: Date, index: number) => {
-                        const dayName = dayNames[index];
-                        const menu = weeklyMenu[dayName as keyof typeof weeklyMenu];
-                        const isToday = format(new Date(), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
+                        {/* Weekly Menu */}
+                        <View style={styles.weekContainer}>
+                            {weekDays.map((day: Date, index: number) => {
+                                const dayName = dayNames[index];
+                                const isToday = format(new Date(), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
 
-                        return (
-                            <View key={index} style={[styles.dayCard, isToday && styles.todayCard]}>
-                                <View style={styles.dayHeader}>
-                                    <Text style={styles.dayName}>{dayName}</Text>
-                                    <Text style={styles.dayDate}>{format(day, 'd MMM')}</Text>
-                                </View>
+                                return (
+                                    <View key={index} style={[styles.dayCard, isToday && styles.todayCard]}>
+                                        <View style={styles.dayHeader}>
+                                            <Text style={styles.dayName}>{dayName}</Text>
+                                            <Text style={styles.dayDate}>{format(day, 'd MMM')}</Text>
+                                        </View>
 
-                                <View style={styles.mealContainer}>
-                                    <View style={styles.mealItem}>
-                                        <Text style={styles.mealTime}>Breakfast</Text>
-                                        <Text style={styles.mealName}>{menu.breakfast}</Text>
+                                        <View style={styles.mealContainer}>
+                                            <View style={styles.mealItem}>
+                                                <Text style={styles.mealTime}>Breakfast</Text>
+                                                <Text style={styles.mealName}>{getMealByType(index, 'Breakfast')}</Text>
+                                            </View>
+
+                                            <View style={styles.mealItem}>
+                                                <Text style={styles.mealTime}>Lunch</Text>
+                                                <Text style={styles.mealName}>{getMealByType(index, 'Lunch')}</Text>
+                                            </View>
+
+                                            <View style={styles.mealItem}>
+                                                <Text style={styles.mealTime}>Dinner</Text>
+                                                <Text style={styles.mealName}>{getMealByType(index, 'Dinner')}</Text>
+                                            </View>
+                                        </View>
                                     </View>
-
-                                    <View style={styles.mealItem}>
-                                        <Text style={styles.mealTime}>Lunch</Text>
-                                        <Text style={styles.mealName}>{menu.lunch}</Text>
-                                    </View>
-
-                                    <View style={styles.mealItem}>
-                                        <Text style={styles.mealTime}>Dinner</Text>
-                                        <Text style={styles.mealName}>{menu.dinner}</Text>
-                                    </View>
-                                </View>
-                            </View>
-                        );
-                    })}
-                </View>
-
+                                );
+                            })}
+                        </View>
+                    </>
+                )}
             </ScrollView>
             <BottomNav activeTab="Timetable" />
         </View>
@@ -254,6 +247,14 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#666',
         flex: 1,
+    },
+    loadingContainer: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    loadingText: {
+        fontSize: 16,
+        color: '#666',
     },
 });
 

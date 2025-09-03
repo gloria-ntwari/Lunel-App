@@ -29,6 +29,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/categories', require('./routes/categories'));
+app.use('/api/meals', require('./routes/meals'));
+app.use('/api/admins', require('./routes/admins'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

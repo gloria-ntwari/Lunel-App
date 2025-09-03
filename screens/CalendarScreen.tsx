@@ -1,22 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, FlatList } from 'react-native';
 import Header from '../components/User(Student)/Calendar/Header';
 import BottomNav from '../components/User(Student)/BottomNav';
 import CalendarCard from '../components/User(Student)/Calendar/CalendarCard';
 import EventItem from '../components/User(Student)/Calendar/EventItem';
 import { format, isSameDay } from 'date-fns';
+import { useCalendar } from '../contexts/CalendarContext';
 
 const CalendarScreen = () => {
     const [selectedDate, setSelectedDate] = useState(new Date());
 
-    // Events (replace with API later)
-    const [events] = useState([
-        { id: '1', title: 'Health and Wellness Expo', location: 'International Exhibition Center', date: new Date(2025, 7, 29), time: '8:00 AM - 3:00 PM' },
-        { id: '2', title: 'Startup Grind Kyiv: Tech Innovations', location: 'UNIT.City', date: new Date(2025, 7, 29), time: '9:00 AM - 4:00 PM' },
-        { id: '3', title: 'Music Festival', location: 'Central Park', date: new Date(2025, 7, 30), time: '6:00 PM - 11:00 PM' },
-    ]);
+    const { events, monthEvents, isLoading, fetchEventsByDate, fetchEventsByMonth } = useCalendar();
 
-    const filteredEvents = events.filter(event => isSameDay(event.date, selectedDate));
+    // Fetch events when component mounts
+    useEffect(() => {
+        fetchEventsByDate(selectedDate);
+        fetchEventsByMonth(selectedDate.getFullYear(), selectedDate.getMonth());
+    }, []);
+
+    // Fetch events when selected date changes
+    useEffect(() => {
+        fetchEventsByDate(selectedDate);
+    }, [selectedDate]);
+
+    // Fetch month events when month changes
+    useEffect(() => {
+        fetchEventsByMonth(selectedDate.getFullYear(), selectedDate.getMonth());
+    }, [selectedDate.getFullYear(), selectedDate.getMonth()]);
+
+    const handleDateChange = (date: Date) => {
+        setSelectedDate(date);
+    };
 
     return (
         <View style={styles.container}>
@@ -27,8 +41,8 @@ const CalendarScreen = () => {
                 <View style={styles.calendarWrapper}>
                     <CalendarCard
                         selectedDate={selectedDate}
-                        onDateChange={setSelectedDate}
-                        events={events}
+                        onDateChange={handleDateChange}
+                        events={monthEvents}
                     />
                 </View>
 
@@ -39,11 +53,15 @@ const CalendarScreen = () => {
                     </Text>
                 </View>
 
-                {filteredEvents.length > 0 ? (
+                {isLoading ? (
+                    <View style={styles.loadingContainer}>
+                        <Text style={styles.loadingText}>Loading events...</Text>
+                    </View>
+                ) : events.length > 0 ? (
                     <FlatList
-                        data={filteredEvents}
+                        data={events}
                         renderItem={({ item }) => <EventItem event={item} />}
-                        keyExtractor={item => item.id}
+                        keyExtractor={item => item._id}
                         scrollEnabled={false}
                     />
                 ) : (
@@ -66,6 +84,14 @@ const styles = StyleSheet.create({
     scrollView: { flex: 1 },
     sectionHeaderRow: { paddingHorizontal: 24, marginTop: 8, marginBottom: 12 },
     sectionHeader: { fontSize: 16, fontWeight: '600', color: '#333' },
+    loadingContainer: { 
+        padding: 24, 
+        alignItems: 'center' 
+    },
+    loadingText: { 
+        color: '#666', 
+        fontSize: 16 
+    },
     noEventsContainer: { padding: 24, alignItems: 'center' },
     noEventsText: { color: '#999', fontSize: 16 },
 });

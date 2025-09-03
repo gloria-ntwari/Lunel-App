@@ -5,15 +5,21 @@ import AppNavigator from './navigation/AppNavigator';
 import { AuthProvider } from './contexts/AuthContext';
 import { EventProvider } from './contexts/EventContext';
 import { CategoryProvider } from './contexts/CategoryContext';
+import { CalendarProvider } from './contexts/CalendarContext';
+import { MealProvider } from './contexts/MealContext';
 
 export default function App() {
   return (
     <AuthProvider>
       <EventProvider>
         <CategoryProvider>
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
+          <CalendarProvider>
+            <MealProvider>
+              <NavigationContainer>
+                <AppNavigator />
+              </NavigationContainer>
+            </MealProvider>
+          </CalendarProvider>
         </CategoryProvider>
       </EventProvider>
     </AuthProvider>

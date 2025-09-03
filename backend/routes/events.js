@@ -25,15 +25,10 @@ const validateEvent = [
     .isLength({ min: 1, max: 100 })
     .withMessage('Title must be between 1 and 100 characters'),
   
-  body('description')
-    .optional()
-    .trim()
-    .isLength({ max: 500 })
-    .withMessage('Description cannot be more than 500 characters'),
-  
   body('category')
-    .isIn(['Concert', 'Theater', 'Sports', 'Exhibition', 'Workshop', 'Meeting', 'Other'])
-    .withMessage('Invalid category'),
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage('Category is required'),
   
   body('date')
     .isISO8601()
@@ -51,6 +46,11 @@ const validateEvent = [
     .trim()
     .isLength({ min: 1, max: 100 })
     .withMessage('Location must be between 1 and 100 characters'),
+  
+  body('image')
+    .optional()
+    .isString()
+    .withMessage('Image must be a string'),
   
   body('maxAttendees')
     .optional()
@@ -141,7 +141,7 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/events
 // @desc    Create new event
 // @access  Private (Admin only)
-router.post('/', auth, requireRole(['admin', 'super_admin']), validateEvent, async (req, res) => {
+router.post('/', auth, requireRole(['admin', 'super_admin', 'event_manager']), validateEvent, async (req, res) => {
   try {
     const eventData = {
       ...req.body,
@@ -182,7 +182,7 @@ router.post('/', auth, requireRole(['admin', 'super_admin']), validateEvent, asy
 // @route   PUT /api/events/:id
 // @desc    Update event
 // @access  Private (Admin only)
-router.put('/:id', auth, requireRole(['admin', 'super_admin']), validateEvent, async (req, res) => {
+router.put('/:id', auth, requireRole(['admin', 'super_admin', 'event_manager']), validateEvent, async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
 
@@ -227,7 +227,7 @@ router.put('/:id', auth, requireRole(['admin', 'super_admin']), validateEvent, a
 // @route   DELETE /api/events/:id
 // @desc    Delete event
 // @access  Private (Admin only)
-router.delete('/:id', auth, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.delete('/:id', auth, requireRole(['admin', 'super_admin', 'event_manager']), async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
 
@@ -256,7 +256,7 @@ router.delete('/:id', auth, requireRole(['admin', 'super_admin']), async (req, r
 // @route   PATCH /api/events/:id/cancel
 // @desc    Cancel event
 // @access  Private (Admin only)
-router.patch('/:id/cancel', auth, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.patch('/:id/cancel', auth, requireRole(['admin', 'super_admin', 'event_manager']), async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
 
@@ -294,6 +294,71 @@ router.patch('/:id/cancel', auth, requireRole(['admin', 'super_admin']), async (
     res.status(500).json({
       success: false,
       message: 'Server error while cancelling event'
+    });
+  }
+});
+
+// @route   GET /api/events/date/:date
+// @desc    Get events for a specific date
+// @access  Private
+router.get('/date/:date', auth, async (req, res) => {
+  try {
+    const { date } = req.params;
+    const dateObj = new Date(date);
+    const nextDay = new Date(dateObj);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const events = await Event.find({
+      date: {
+        $gte: dateObj,
+        $lt: nextDay
+      },
+      isActive: true
+    })
+    .populate('createdBy', 'name email')
+    .sort({ startTime: 1 });
+
+    res.json({
+      success: true,
+      data: events
+    });
+  } catch (error) {
+    console.error('Get events by date error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching events by date'
+    });
+  }
+});
+
+// @route   GET /api/events/month/:year/:month
+// @desc    Get events for a specific month (for calendar dots)
+// @access  Private
+router.get('/month/:year/:month', auth, async (req, res) => {
+  try {
+    const { year, month } = req.params;
+    const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+    const endDate = new Date(parseInt(year), parseInt(month), 0);
+
+    const events = await Event.find({
+      date: {
+        $gte: startDate,
+        $lte: endDate
+      },
+      isActive: true
+    })
+    .populate('createdBy', 'name email')
+    .select('date title');
+
+    res.json({
+      success: true,
+      data: events
+    });
+  } catch (error) {
+    console.error('Get events by month error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching events by month'
     });
   }
 });

@@ -1,14 +1,19 @@
 // API Configuration
+import { Platform } from 'react-native';
+
+const BASE_URL = Platform.select({
+  // iOS simulator and Web use localhost
+  ios: 'http://localhost:5000/api',
+  web: 'http://localhost:5000/api',
+  // Physical Android device (Expo Go) should use your machine's Wi‑Fi IP
+  android: 'http://10.100.20.161:5000/api',
+  // Fallback
+  default: 'http://localhost:5000/api',
+});
+
 export const API_CONFIG = {
-  // Using your computer's IP address for better connectivity
-  BASE_URL: 'http://192.168.127.50:5000/api',
+  BASE_URL: BASE_URL as string,
   TIMEOUT: 10000, // 10 seconds
 };
-
-// Alternative configurations for different environments:
-// Android Emulator: 'http://10.0.2.2:5000/api'
-// iOS Simulator: 'http://localhost:5000/api'
-// Physical Device: 'http://192.168.127.50:5000/api'
-// Localhost: 'http://localhost:5000/api'
 
 export default API_CONFIG;

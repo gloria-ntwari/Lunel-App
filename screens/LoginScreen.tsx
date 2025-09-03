@@ -21,7 +21,8 @@ export default function LoginScreen() {
     
     if (result.success && result.user) {
       // Navigate based on user role
-      if (result.user.role === 'super_admin' || result.user.role === 'admin') {
+      const role = result.user.role as any;
+      if (role === 'super_admin' || role === 'admin' || role === 'event_manager' || role === 'meal_coordinator') {
         navigation.navigate('AdminHome' as never);
       } else {
         navigation.navigate('Event' as never);

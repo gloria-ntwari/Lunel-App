@@ -1,54 +1,23 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import BottomNav from '../components/Admin/BottomNav';
+import axios from 'axios';
+import { API_CONFIG } from '../config/api';
 
 interface AdminUser {
-    id: string;
+    _id: string;
     name: string;
     email: string;
-    role: string;
-    avatar: string;
-    joinDate: string;
-    permissions: string[];
+    role: 'super_admin' | 'admin' | 'event_manager' | 'meal_coordinator';
     isActive: boolean;
+    createdAt?: string;
 }
 
 const AdminManagementScreen = () => {
     const navigation = useNavigation();
-    const [admins, setAdmins] = useState<AdminUser[]>([
-        {
-            id: '1',
-            name: 'Gloria Admin',
-            email: 'gloria.admin@lunel.com',
-            role: 'Super Admin',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-            joinDate: 'January 2024',
-            permissions: ['Manage Events', 'Manage Meals', 'Manage Admins'],
-            isActive: true
-        },
-        {
-            id: '2',
-            name: 'John Manager',
-            email: 'john.manager@lunel.com',
-            role: 'Event Manager',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-            joinDate: 'February 2024',
-            permissions: ['Manage Events', 'Manage Meals'],
-            isActive: true
-        },
-        {
-            id: '3',
-            name: 'Sarah Coordinator',
-            email: 'sarah.coordinator@lunel.com',
-            role: 'Meal Coordinator',
-            avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400',
-            joinDate: 'March 2024',
-            permissions: ['Manage Meals'],
-            isActive: false
-        }
-    ]);
+    const [admins, setAdmins] = useState<AdminUser[]>([]);
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -57,40 +26,83 @@ const AdminManagementScreen = () => {
         name: '',
         email: '',
         role: '',
-        permissions: [] as string[]
     });
 
     const availableRoles = ['Super Admin', 'Event Manager', 'Meal Coordinator'];
-    const availablePermissions = ['Manage Events', 'Manage Meals', 'Manage Admins'];
 
-    const handleAddAdmin = () => {
-        if (formData.name.trim() && formData.email.trim() && formData.role) {
-            const newAdmin: AdminUser = {
-                id: Date.now().toString(),
-                name: formData.name.trim(),
-                email: formData.email.trim(),
-                role: formData.role,
-                avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400',
-                joinDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-                permissions: formData.permissions,
-                isActive: true
-            };
-            setAdmins(prev => [...prev, newAdmin]);
-            setShowAddModal(false);
-            resetForm();
+    const mapUiRoleToApi = (role: string) => {
+        switch (role) {
+            case 'Super Admin': return 'super_admin';
+            case 'Event Manager': return 'event_manager';
+            case 'Meal Coordinator': return 'meal_coordinator';
+            default: return 'admin';
         }
     };
 
-    const handleEditAdmin = () => {
-        if (selectedAdmin && formData.name.trim() && formData.email.trim() && formData.role) {
-            setAdmins(prev => prev.map(admin =>
-                admin.id === selectedAdmin.id
-                    ? { ...admin, name: formData.name.trim(), email: formData.email.trim(), role: formData.role, permissions: formData.permissions }
-                    : admin
-            ));
-            setShowEditModal(false);
-            setSelectedAdmin(null);
-            resetForm();
+    const mapApiRoleToUi = (role: AdminUser['role']) => {
+        switch (role) {
+            case 'super_admin': return 'Super Admin';
+            case 'event_manager': return 'Event Manager';
+            case 'meal_coordinator': return 'Meal Coordinator';
+            case 'admin': return 'Admin';
+            default: return role;
+        }
+    };
+
+    const roleToPermissions = (role: AdminUser['role']) => {
+        if (role === 'super_admin') return ['Manage Events', 'Manage Meals', 'Manage Admins'];
+        if (role === 'event_manager') return ['Manage Events'];
+        if (role === 'meal_coordinator') return ['Manage Meals'];
+        if (role === 'admin') return ['Manage Events', 'Manage Meals'];
+        return [];
+    };
+
+    const fetchAdmins = async () => {
+        try {
+            const res = await axios.get(`${API_CONFIG.BASE_URL}/admins`);
+            const list: AdminUser[] = res.data?.data?.admins || [];
+            setAdmins(list);
+        } catch (e: any) {
+            Alert.alert('Error', e.response?.data?.message || 'Failed to load admins');
+        }
+    };
+
+    useEffect(() => {
+        fetchAdmins();
+    }, []);
+
+    const handleAddAdmin = async () => {
+        if (formData.name.trim() && formData.email.trim() && formData.role) {
+            try {
+                await axios.post(`${API_CONFIG.BASE_URL}/admins`, {
+                    name: formData.name.trim(),
+                    email: formData.email.trim(),
+                    role: mapUiRoleToApi(formData.role),
+                });
+                setShowAddModal(false);
+                resetForm();
+                fetchAdmins();
+                Alert.alert('Success', 'Admin created. A default password was emailed.');
+            } catch (e: any) {
+                Alert.alert('Error', e.response?.data?.message || 'Failed to create admin');
+            }
+        }
+    };
+
+    const handleEditAdmin = async () => {
+        if (selectedAdmin && formData.name.trim() && formData.role) {
+            try {
+                await axios.put(`${API_CONFIG.BASE_URL}/admins/${selectedAdmin._id}`, {
+                    name: formData.name.trim(),
+                    role: mapUiRoleToApi(formData.role),
+                });
+                setShowEditModal(false);
+                setSelectedAdmin(null);
+                resetForm();
+                fetchAdmins();
+            } catch (e: any) {
+                Alert.alert('Error', e.response?.data?.message || 'Failed to update admin');
+            }
         }
     };
 
@@ -101,20 +113,28 @@ const AdminManagementScreen = () => {
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Delete', style: 'destructive', onPress: () => {
-                        setAdmins(prev => prev.filter(admin => admin.id !== adminId));
+                    text: 'Delete', style: 'destructive', onPress: async () => {
+                        try {
+                            await axios.delete(`${API_CONFIG.BASE_URL}/admins/${adminId}`);
+                            fetchAdmins();
+                        } catch (e: any) {
+                            Alert.alert('Error', e.response?.data?.message || 'Failed to delete admin');
+                        }
                     }
                 }
             ]
         );
     };
 
-    const handleToggleStatus = (adminId: string) => {
-        setAdmins(prev => prev.map(admin =>
-            admin.id === adminId
-                ? { ...admin, isActive: !admin.isActive }
-                : admin
-        ));
+    const handleToggleStatus = async (adminId: string) => {
+        try {
+            const target = admins.find(a => a._id === adminId);
+            if (!target) return;
+            await axios.put(`${API_CONFIG.BASE_URL}/admins/${adminId}`, { isActive: !target.isActive });
+            fetchAdmins();
+        } catch (e: any) {
+            Alert.alert('Error', e.response?.data?.message || 'Failed to update status');
+        }
     };
 
     const resetForm = () => {
@@ -122,7 +142,6 @@ const AdminManagementScreen = () => {
             name: '',
             email: '',
             role: '',
-            permissions: []
         });
     };
 
@@ -131,20 +150,11 @@ const AdminManagementScreen = () => {
         setFormData({
             name: admin.name,
             email: admin.email,
-            role: admin.role,
-            permissions: admin.permissions
+            role: mapApiRoleToUi(admin.role),
         });
         setShowEditModal(true);
     };
 
-    const togglePermission = (permission: string) => {
-        setFormData(prev => ({
-            ...prev,
-            permissions: prev.permissions.includes(permission)
-                ? prev.permissions.filter(p => p !== permission)
-                : [...prev.permissions, permission]
-        }));
-    };
 
     return (
         <View style={styles.container}>
@@ -172,21 +182,22 @@ const AdminManagementScreen = () => {
                 {/* Admin List */}
                 <View style={styles.adminList}>
                     {admins.map((admin) => (
-                        <View key={admin.id} style={styles.adminCard}>
+                        <View key={admin._id} style={styles.adminCard}>
                             <View style={styles.adminInfo}>
-                                <Image source={{ uri: admin.avatar }} style={styles.adminAvatar} />
                                 <View style={styles.adminDetails}>
                                     <Text style={styles.adminName}>{admin.name}</Text>
                                     <Text style={styles.adminEmail}>{admin.email}</Text>
-                                    <Text style={styles.adminRole}>{admin.role}</Text>
-                                    <Text style={styles.joinDate}>Joined {admin.joinDate}</Text>
+                                    <Text style={styles.adminRole}>{mapApiRoleToUi(admin.role)}</Text>
+                                    {admin.createdAt ? (
+                                        <Text style={styles.joinDate}>Joined {new Date(admin.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</Text>
+                                    ) : null}
                                 </View>
                             </View>
 
                             <View style={styles.adminActions}>
                                 <TouchableOpacity
                                     style={[styles.statusButton, admin.isActive ? styles.activeButton : styles.inactiveButton]}
-                                    onPress={() => handleToggleStatus(admin.id)}
+                                    onPress={() => handleToggleStatus(admin._id)}
                                 >
                                     <Text style={[styles.statusText, admin.isActive ? styles.activeText : styles.inactiveText]}>
                                         {admin.isActive ? 'Active' : 'Inactive'}
@@ -202,7 +213,7 @@ const AdminManagementScreen = () => {
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={styles.deleteButton}
-                                        onPress={() => handleDeleteAdmin(admin.id)}
+                                        onPress={() => handleDeleteAdmin(admin._id)}
                                     >
                                         <MaterialIcons name="delete" size={20} color="#e74c3c" />
                                     </TouchableOpacity>
@@ -213,7 +224,7 @@ const AdminManagementScreen = () => {
                             <View style={styles.permissionsSection}>
                                 <Text style={styles.permissionsTitle}>Permissions:</Text>
                                 <View style={styles.permissionsList}>
-                                    {admin.permissions.map((permission, index) => (
+                                    {roleToPermissions(admin.role).map((permission, index) => (
                                         <View key={index} style={styles.permissionTag}>
                                             <Text style={styles.permissionText}>{permission}</Text>
                                         </View>
@@ -277,26 +288,7 @@ const AdminManagementScreen = () => {
                             ))}
                         </View>
 
-                        <Text style={styles.label}>Permissions:</Text>
-                        <View style={styles.permissionsContainer}>
-                            {availablePermissions.map((permission) => (
-                                <TouchableOpacity
-                                    key={permission}
-                                    style={[
-                                        styles.permissionOption,
-                                        formData.permissions.includes(permission) && styles.selectedPermission
-                                    ]}
-                                    onPress={() => togglePermission(permission)}
-                                >
-                                    <Text style={[
-                                        styles.permissionOptionText,
-                                        formData.permissions.includes(permission) && styles.selectedPermissionText
-                                    ]}>
-                                        {permission}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                        {/* Permissions removed: assigned automatically by role */}
 
                         <View style={styles.modalButtons}>
                             <TouchableOpacity
@@ -371,26 +363,7 @@ const AdminManagementScreen = () => {
                             ))}
                         </View>
 
-                        <Text style={styles.label}>Permissions:</Text>
-                        <View style={styles.permissionsContainer}>
-                            {availablePermissions.map((permission) => (
-                                <TouchableOpacity
-                                    key={permission}
-                                    style={[
-                                        styles.permissionOption,
-                                        formData.permissions.includes(permission) && styles.selectedPermission
-                                    ]}
-                                    onPress={() => togglePermission(permission)}
-                                >
-                                    <Text style={[
-                                        styles.permissionOptionText,
-                                        formData.permissions.includes(permission) && styles.selectedPermissionText
-                                    ]}>
-                                        {permission}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                        {/* Permissions removed: assigned automatically by role */}
 
                         <View style={styles.modalButtons}>
                             <TouchableOpacity

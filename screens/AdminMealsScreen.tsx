@@ -1,268 +1,360 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { format, addDays, startOfWeek } from 'date-fns';
+import Header from '../components/Admin/Home/HeaderSection';
 import BottomNav from '../components/Admin/BottomNav';
-import Header from '../components/Admin/Timetable/Header';
-import MealModal from '../components/Admin/Timetable/MealModal';
-import MealActionsModal from '../components/Admin/Timetable/MealActionsModal';
-
-interface Meal {
-    id: string;
-    breakfast: string;
-    lunch: string;
-    dinner: string;
-}
-
-interface WeeklyMenu {
-    [key: string]: Meal;
-}
+// Removed complex MealModal in favor of simple quick-edit modal
+import { useMeals, type Meal } from '../contexts/MealContext';
+import { format } from 'date-fns';
 
 const AdminMealsScreen = () => {
-    const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
-        startOfWeek(new Date(), { weekStartsOn: 1 }) // Monday
-    );
+  const { meals, isLoading, fetchMeals, createMeal, updateMeal, deleteMeal } = useMeals();
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedMealType, setSelectedMealType] = useState('all');
+  const [editingMeal, setEditingMeal] = useState<Partial<Meal> | null>(null);
+  const dayNames: Array<Meal['day']> = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const [quickAddVisible, setQuickAddVisible] = useState(false);
+  const [quickAddDate, setQuickAddDate] = useState<Date>(new Date());
+  const [quickAddType, setQuickAddType] = useState<'Breakfast' | 'Lunch' | 'Dinner'>('Breakfast');
+  const [quickAddMenu, setQuickAddMenu] = useState('');
+  const [selectedDayName, setSelectedDayName] = useState<Meal['day']>('Monday');
 
-    const [weeklyMenu, setWeeklyMenu] = useState<WeeklyMenu>({
-        'Monday': {
-            id: 'monday',
-            breakfast: 'Oatmeal with fruits',
-            lunch: 'Grilled chicken with rice',
-            dinner: 'Vegetable pasta'
-        },
-        'Tuesday': {
-            id: 'tuesday',
-            breakfast: 'Yogurt with granola',
-            lunch: 'Fish with quinoa',
-            dinner: 'Vegetable stir-fry'
-        },
-        'Wednesday': {
-            id: 'wednesday',
-            breakfast: 'Avocado toast',
-            lunch: 'Beef burger with sweet potato fries',
-            dinner: 'Chicken Caesar salad'
-        },
-        'Thursday': {
-            id: 'thursday',
-            breakfast: 'Smoothie bowl',
-            lunch: 'Pasta carbonara',
-            dinner: 'Grilled salmon with vegetables'
-        },
-        'Friday': {
-            id: 'friday',
-            breakfast: 'Pancakes with maple syrup',
-            lunch: 'Chicken wrap with salad',
-            dinner: 'Pizza night'
-        },
-        'Saturday': {
-            id: 'saturday',
-            breakfast: 'Full English breakfast',
-            lunch: 'BBQ ribs with corn',
-            dinner: 'Sushi platter'
-        },
-        'Sunday': {
-            id: 'sunday',
-            breakfast: 'French toast',
-            lunch: 'Roast dinner',
-            dinner: 'Soup and sandwiches'
+  useEffect(() => {
+    fetchMeals();
+  }, []);
+
+  const getCanonicalDateForDay = (dayName: Meal['day']): Date => {
+    const anchor = new Date(2024, 0, 1); // Jan 1, 2024 (Monday)
+    const index = dayNames.indexOf(dayName);
+    const d = new Date(anchor);
+    d.setDate(anchor.getDate() + index);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  const handleDeleteMeal = async (mealId: string) => {
+    Alert.alert(
+      'Delete Meal',
+      'Are you sure you want to delete this meal?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteMeal(mealId);
+              Alert.alert('Success', 'Meal deleted successfully!');
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete meal');
+            }
+          }
         }
-    });
-
-    const [showMealModal, setShowMealModal] = useState(false);
-    const [selectedDay, setSelectedDay] = useState<string>('');
-    const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
-    const [showActionsModal, setShowActionsModal] = useState(false);
-    const [dayForActions, setDayForActions] = useState<string>('');
-
-    // Generate array of 7 days starting from currentWeekStart
-    const weekDays = Array.from({ length: 7 }, (_, i) =>
-        addDays(new Date(currentWeekStart), i)
+      ]
     );
+  };
 
-    const navigateWeek = (direction: 'prev' | 'next') => {
-        setCurrentWeekStart(prev =>
-            direction === 'prev' ? addDays(prev, -7) : addDays(prev, 7)
-        );
-    };
+  const handleEditMeal = (meal: Meal) => {
+    setEditingMeal(meal);
+    setSelectedDayName(meal.day as any);
+    setQuickAddType(meal.mealType as 'Breakfast' | 'Lunch' | 'Dinner');
+    setQuickAddMenu(meal.menu || '');
+    setQuickAddVisible(true);
+  };
 
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const handleAddMeal = (dayName?: Meal['day'], mealType?: Meal['mealType']) => {
+    if (dayName && mealType) {
+      setSelectedDayName(dayName);
+      setQuickAddType(mealType as 'Breakfast' | 'Lunch' | 'Dinner');
+      setQuickAddMenu('');
+      setQuickAddVisible(true);
+    }
+  };
 
-    const handleAddMeal = (day: string) => {
-        setSelectedDay(day);
-        setSelectedMeal(null);
-        setShowMealModal(true);
-    };
-
-    const handleEditMeal = (day: string) => {
-        setSelectedDay(day);
-        setSelectedMeal(weeklyMenu[day]);
-        setShowMealModal(true);
-    };
-
-    const handleDeleteMeal = (day: string) => {
-        const updatedMenu = { ...weeklyMenu };
-        delete updatedMenu[day];
-        setWeeklyMenu(updatedMenu);
-    };
-
-    const handleSaveMeal = (mealData: { breakfast: string; lunch: string; dinner: string }) => {
-        if (selectedMeal) {
-            // Update existing meal
-            setWeeklyMenu(prev => ({
-                ...prev,
-                [selectedDay]: {
-                    ...prev[selectedDay],
-                    ...mealData
-                }
-            }));
+  const handleModalSubmit = async (mealData: any) => {
+    try {
+      if (editingMeal && (editingMeal as any)._id) {
+        await updateMeal((editingMeal as any)._id, {
+          ...mealData,
+          mealType: quickAddType,
+          date: quickAddDate,
+        });
+        Alert.alert('Success', 'Meal updated successfully!');
         } else {
-            // Add new meal
-            setWeeklyMenu(prev => ({
-                ...prev,
-                [selectedDay]: {
-                    id: selectedDay.toLowerCase(),
-                    ...mealData
-                }
-            }));
-        }
-        setShowMealModal(false);
-        setSelectedDay('');
-        setSelectedMeal(null);
-    };
+        await createMeal(mealData);
+        Alert.alert('Success', 'Meal created successfully!');
+      }
+      setEditingMeal(null);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to save meal');
+    }
+  };
 
-    const handleMealPress = (day: string) => {
-        setDayForActions(day);
-        setShowActionsModal(true);
-    };
-
-    const closeActionsModal = () => {
-        setShowActionsModal(false);
-        setDayForActions('');
-    };
-
-    return (
-        <View style={styles.container}>
-            <ScrollView style={styles.scrollView}>
-                <Header greeting="Weekly Meals Management" />
-
-                {/* Week Navigation */}
-                <View style={styles.weekNavigation}>
+  const renderMealItem = ({ item }: { item: any }) => (
+    <View style={styles.mealCard}>
+      <View style={styles.mealHeader}>
+        <View style={styles.mealTypeContainer}>
+          <Text style={styles.mealType}>{item.mealType}</Text>
+        </View>
+        <View style={styles.mealActions}>
                     <TouchableOpacity
-                        style={styles.navButton}
-                        onPress={() => navigateWeek('prev')}
+            style={styles.actionButton} 
+            onPress={() => handleEditMeal(item)}
                     >
-                        <Ionicons name="chevron-back" size={24} color="#f96c3d" />
+            <Ionicons name="pencil" size={16} color="#5b1ab2" />
                     </TouchableOpacity>
-
-                    <Text style={styles.weekText}>
-                        {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
-                    </Text>
-
                     <TouchableOpacity
-                        style={styles.navButton}
-                        onPress={() => navigateWeek('next')}
+            style={styles.actionButton} 
+            onPress={() => handleDeleteMeal(item._id)}
                     >
-                        <Ionicons name="chevron-forward" size={24} color="#f96c3d" />
+            <Ionicons name="trash" size={16} color="#e74c3c" />
                     </TouchableOpacity>
                 </View>
-
-                {/* Weekly Menu */}
-                <View style={styles.weekContainer}>
-                    {weekDays.map((day: Date, index: number) => {
-                        const dayName = dayNames[index];
-                        const menu = weeklyMenu[dayName];
-                        const isToday = format(new Date(), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd');
-
-                        return (
-                            <View key={index} style={[styles.dayCard, isToday && styles.todayCard]}>
-                                <View style={styles.dayHeader}>
-                                    <Text style={styles.dayName}>{dayName}</Text>
-                                    <Text style={styles.dayDate}>{format(day, 'd MMM')}</Text>
                                 </View>
 
-                                {menu ? (
+      <Text style={styles.mealTitle}>{item.title}</Text>
+      {item.description && (
+        <Text style={styles.mealDescription}>{item.description}</Text>
+      )}
+      <Text style={styles.mealMenu}>{item.menu}</Text>
+      {/* Removed date display by request */}
+    </View>
+  );
+
+  const renderFilterButtons = () => (
+    <View style={styles.filterContainer}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <TouchableOpacity
+          style={[styles.filterButton, selectedFilter === 'all' && styles.activeFilter]}
+          onPress={() => setSelectedFilter('all')}
+        >
+          <Text style={[styles.filterText, selectedFilter === 'all' && styles.activeFilterText]}>
+            All Meals
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.filterButton, selectedFilter === 'today' && styles.activeFilter]}
+          onPress={() => setSelectedFilter('today')}
+        >
+          <Text style={[styles.filterText, selectedFilter === 'today' && styles.activeFilterText]}>
+            Today
+          </Text>
+        </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={styles.mealContainer}
-                                        onPress={() => handleMealPress(dayName)}
-                                        activeOpacity={0.8}
-                                    >
-                                        <View style={styles.mealItem}>
-                                            <Text style={styles.mealTime}>Breakfast</Text>
-                                            <Text style={styles.mealName}>{menu.breakfast}</Text>
+          style={[styles.filterButton, selectedFilter === 'upcoming' && styles.activeFilter]}
+          onPress={() => setSelectedFilter('upcoming')}
+        >
+          <Text style={[styles.filterText, selectedFilter === 'upcoming' && styles.activeFilterText]}>
+            Upcoming
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
                                         </View>
+  );
 
-                                        <View style={styles.mealItem}>
-                                            <Text style={styles.mealTime}>Lunch</Text>
-                                            <Text style={styles.mealName}>{menu.lunch}</Text>
-                                        </View>
-
-                                        <View style={styles.mealItem}>
-                                            <Text style={styles.mealTime}>Dinner</Text>
-                                            <Text style={styles.mealName}>{menu.dinner}</Text>
-                                        </View>
+  const renderMealTypeButtons = () => (
+    <View style={styles.mealTypeFilterContainer}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <TouchableOpacity
+          style={[styles.mealTypeButton, selectedMealType === 'all' && styles.activeMealType]}
+          onPress={() => setSelectedMealType('all')}
+        >
+          <Text style={[styles.mealTypeText, selectedMealType === 'all' && styles.activeMealTypeText]}>
+            All Types
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.mealTypeButton, selectedMealType === 'Breakfast' && styles.activeMealType]}
+          onPress={() => setSelectedMealType('Breakfast')}
+        >
+          <Text style={[styles.mealTypeText, selectedMealType === 'Breakfast' && styles.activeMealTypeText]}>
+            Breakfast
+          </Text>
                                     </TouchableOpacity>
-                                ) : (
                                     <TouchableOpacity
-                                        style={styles.addMealButton}
-                                        onPress={() => handleAddMeal(dayName)}
+          style={[styles.mealTypeButton, selectedMealType === 'Lunch' && styles.activeMealType]}
+          onPress={() => setSelectedMealType('Lunch')}
                                     >
-                                        <Ionicons name="add-circle" size={24} color="#f96c3d" />
-                                        <Text style={styles.addMealText}>Add Meals for {dayName}</Text>
+          <Text style={[styles.mealTypeText, selectedMealType === 'Lunch' && styles.activeMealTypeText]}>
+            Lunch
+          </Text>
                                     </TouchableOpacity>
-                                )}
-
-                                {menu && (
-                                    <View style={styles.actionButtons}>
                                         <TouchableOpacity
-                                            style={styles.editButton}
-                                            onPress={() => handleEditMeal(dayName)}
+          style={[styles.mealTypeButton, selectedMealType === 'Dinner' && styles.activeMealType]}
+          onPress={() => setSelectedMealType('Dinner')}
                                         >
-                                            <Ionicons name="create" size={16} color="#5b1ab2" />
-                                            <Text style={styles.editButtonText}>Edit</Text>
+          <Text style={[styles.mealTypeText, selectedMealType === 'Dinner' && styles.activeMealTypeText]}>
+            Dinner
+          </Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
-                                            style={styles.deleteButton}
-                                            onPress={() => handleDeleteMeal(dayName)}
+          style={[styles.mealTypeButton, selectedMealType === 'Snack' && styles.activeMealType]}
+          onPress={() => setSelectedMealType('Snack')}
                                         >
-                                            <Ionicons name="trash" size={16} color="#e74c3c" />
-                                            <Text style={styles.deleteButtonText}>Delete</Text>
+          <Text style={[styles.mealTypeText, selectedMealType === 'Snack' && styles.activeMealTypeText]}>
+            Snack
+          </Text>
                                         </TouchableOpacity>
-                                    </View>
-                                )}
+      </ScrollView>
                             </View>
                         );
-                    })}
-                </View>
 
+  return (
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        <Header greeting="Meals Management" />
+        
+        {/* Removed top Add button and filters per request */}
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading meals...</Text>
+          </View>
+        ) : (
+          <View style={{ paddingHorizontal: 20 }}>
+            {dayNames.map((dayName, idx) => {
+              const dayMeals = meals.filter((m: any) => m.day === dayName);
+              const breakfast = dayMeals.find(m => m.mealType === 'Breakfast');
+              const lunch = dayMeals.find(m => m.mealType === 'Lunch');
+              const dinner = dayMeals.find(m => m.mealType === 'Dinner');
+              return (
+                <View key={idx} style={styles.dayCard}>
+                  <View style={styles.dayHeader}>
+                    <Text style={styles.dayName}>{dayName}</Text>
+                  </View>
+                  <View style={styles.mealContainer}>
+                    <View style={styles.mealItem}>
+                      <Text style={styles.mealTime}>Breakfast</Text>
+                      {breakfast ? (
+                        renderMealItem({ item: breakfast })
+                      ) : (
+                        <TouchableOpacity style={styles.placeholder} onPress={() => handleAddMeal(dayName, 'Breakfast')}>
+                          <Ionicons name="add-circle-outline" size={18} color="#5b1ab2" />
+                          <Text style={styles.placeholderText}>Add breakfast</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <View style={styles.mealItem}>
+                      <Text style={styles.mealTime}>Lunch</Text>
+                      {lunch ? (
+                        renderMealItem({ item: lunch })
+                      ) : (
+                        <TouchableOpacity style={styles.placeholder} onPress={() => handleAddMeal(dayName, 'Lunch')}>
+                          <Ionicons name="add-circle-outline" size={18} color="#5b1ab2" />
+                          <Text style={styles.placeholderText}>Add lunch</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <View style={styles.mealItem}>
+                      <Text style={styles.mealTime}>Dinner</Text>
+                      {dinner ? (
+                        renderMealItem({ item: dinner })
+                      ) : (
+                        <TouchableOpacity style={styles.placeholder} onPress={() => handleAddMeal(dayName, 'Dinner')}>
+                          <Ionicons name="add-circle-outline" size={18} color="#5b1ab2" />
+                          <Text style={styles.placeholderText}>Add dinner</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
             </ScrollView>
 
-            {/* Meal Modal for Add/Edit */}
-            <MealModal
-                visible={showMealModal}
-                onClose={() => {
-                    setShowMealModal(false);
-                    setSelectedDay('');
-                    setSelectedMeal(null);
-                }}
-                onSave={handleSaveMeal}
-                day={selectedDay}
-                meal={selectedMeal}
+            {/* Quick Add Modal - single text field */}
+            <Modal visible={quickAddVisible} transparent animationType="fade" onRequestClose={() => setQuickAddVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 20 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 10 }}>
+              {editingMeal && (editingMeal as any)._id ? 'Edit' : 'Add'} {quickAddType} · {selectedDayName}
+            </Text>
+            {/* Date removed from modal per request */}
+            <TextInput
+              style={{ borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, color: '#333' }}
+              placeholder={`Enter ${quickAddType} menu`}
+              placeholderTextColor="#999"
+              value={quickAddMenu}
+              onChangeText={setQuickAddMenu}
             />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+              <TouchableOpacity onPress={() => setQuickAddVisible(false)} style={{ paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: '#ddd' }}>
+                <Text style={{ color: '#666' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!quickAddMenu.trim()) return;
+                  try {
+                    await createMeal({
+                      title: `${quickAddType} Meal`,
+                      mealType: quickAddType,
+                      day: selectedDayName,
+                      menu: quickAddMenu.trim(),
+                    });
+                    setQuickAddVisible(false);
+                  } catch (e) {
+                    Alert.alert('Error', 'Failed to add meal');
+                  }
+                }}
+                style={{ paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#5b1ab2' }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '600' }}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
-            {/* Meal Actions Modal */}
-            <MealActionsModal
-                visible={showActionsModal}
-                onClose={closeActionsModal}
-                onEdit={() => {
-                    handleEditMeal(dayForActions);
-                    closeActionsModal();
-                }}
-                onDelete={() => {
-                    handleDeleteMeal(dayForActions);
-                    closeActionsModal();
-                }}
-                dayName={dayForActions}
+            {/* Simple Quick Add/Edit Modal */}
+            <Modal visible={quickAddVisible} transparent animationType="fade" onRequestClose={() => setQuickAddVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 20 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 10 }}>
+              {editingMeal && (editingMeal as any)._id ? 'Edit' : 'Add'} {quickAddType} · {selectedDayName}
+            </Text>
+            {/* Date removed from modal per request */}
+            <TextInput
+              style={{ borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, color: '#333' }}
+              placeholder={`Enter ${quickAddType} menu`}
+              placeholderTextColor="#999"
+              value={quickAddMenu}
+              onChangeText={setQuickAddMenu}
             />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+              <TouchableOpacity onPress={() => { setQuickAddVisible(false); setEditingMeal(null); }} style={{ paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: '#ddd' }}>
+                <Text style={{ color: '#666' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  const trimmed = quickAddMenu.trim();
+                  if (!trimmed) return;
+                  try {
+                    if (editingMeal && (editingMeal as any)._id) {
+                      await updateMeal((editingMeal as any)._id, { menu: trimmed, day: selectedDayName });
+                    } else {
+                      await createMeal({
+                        title: `${quickAddType} Meal`,
+                        mealType: quickAddType,
+                        day: selectedDayName,
+                        menu: trimmed,
+                      });
+                    }
+                    setQuickAddVisible(false);
+                    setEditingMeal(null);
+                  } catch (e) {
+                    Alert.alert('Error', 'Failed to save meal');
+                  }
+                }}
+                style={{ paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#5b1ab2' }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '600' }}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
             <BottomNav activeTab="Timetable" />
         </View>
@@ -272,14 +364,83 @@ const AdminMealsScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f8f8',
+    backgroundColor: '#f8f9fa',
     },
     scrollView: {
         flex: 1,
     },
-    weekNavigation: {
+  addButtonContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  addButton: {
+    backgroundColor: '#5b1ab2',
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  addButtonText: {
+    color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    marginLeft: 8,
+  },
+  filterContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  activeFilter: {
+    backgroundColor: '#5b1ab2',
+    borderColor: '#5b1ab2',
+  },
+  filterText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  activeFilterText: {
+    color: '#fff',
+  },
+  mealTypeFilterContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  mealTypeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  activeMealType: {
+    backgroundColor: '#f96c3d',
+    borderColor: '#f96c3d',
+  },
+  mealTypeText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  activeMealTypeText: {
+    color: '#fff',
+  },
+  mealsList: {
+    paddingHorizontal: 20,
+  },
+  weekNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
         alignItems: 'center',
         padding: 15,
         backgroundColor: 'white',
@@ -298,9 +459,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#333',
-    },
-    weekContainer: {
-        padding: 10,
     },
     dayCard: {
         backgroundColor: 'white',
@@ -348,63 +506,101 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         marginBottom: 4,
     },
-    mealName: {
+  placeholder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+  },
+  placeholderText: {
+    color: '#5b1ab2',
         fontSize: 14,
-        color: '#333',
+    fontWeight: '500',
+  },
+  mealCard: {
+    backgroundColor: '#fff',
+        borderRadius: 12,
+    padding: 16,
+        marginBottom: 12,
+        shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
     },
-    addMealButton: {
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  mealHeader: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
-        backgroundColor: '#f0f8ff',
-        borderRadius: 8,
-        borderWidth: 2,
-        borderColor: '#e0e0e0',
-        borderStyle: 'dashed',
+    marginBottom: 12,
+  },
+  mealTypeContainer: {
+    backgroundColor: '#f96c3d',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  mealType: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  mealActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    padding: 6,
+    borderRadius: 4,
+    backgroundColor: '#f8f9fa',
+  },
+  mealTitle: {
+    fontSize: 18,
+        fontWeight: '600',
+        color: '#333',
+    marginBottom: 4,
     },
-    addMealText: {
-        marginLeft: 8,
+  mealDescription: {
         fontSize: 14,
         color: '#666',
-        fontWeight: '500',
-    },
-    actionButtons: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        gap: 12,
-        marginTop: 12,
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
-    },
-    editButton: {
-        flexDirection: 'row',
+    marginBottom: 8,
+  },
+  mealMenu: {
+        fontSize: 14,
+        color: '#333',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  mealDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  loadingContainer: {
+    padding: 40,
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        backgroundColor: 'rgba(91, 26, 178, 0.1)',
-        borderRadius: 16,
-        gap: 4,
-    },
-    editButtonText: {
-        fontSize: 12,
-        color: '#5b1ab2',
-        fontWeight: '500',
-    },
-    deleteButton: {
-        flexDirection: 'row',
+  },
+  loadingText: {
+    fontSize: 16,
+        color: '#666',
+  },
+  noMealsContainer: {
+    padding: 40,
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        backgroundColor: 'rgba(231, 76, 60, 0.1)',
-        borderRadius: 16,
-        gap: 4,
-    },
-    deleteButtonText: {
-        fontSize: 12,
-        color: '#e74c3c',
-        fontWeight: '500',
+  },
+  noMealsText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noMealsSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
     },
 });
 
