@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Modal, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AdminCategoryTabs from './AdminCategoryTabs';
+import { useCategories } from '../../../contexts/CategoryContext';
 
 let LinearGradient: any;
 try {
@@ -15,45 +16,86 @@ interface HeaderProps {
 }
 
 const Header = ({ greeting }: HeaderProps) => {
-  const [categories, setCategories] = useState(['All events', 'Concerts', 'Theater', 'Sports', 'Festival']);
+  const { categories, fetchAdminCategories, createCategory, updateCategory, deleteCategory, isLoading } = useCategories();
   const [activeCategory, setActiveCategory] = useState('All events');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
+
+  // Fetch categories when component mounts
+  useEffect(() => {
+    fetchAdminCategories();
+  }, []);
+
+  // Create dynamic categories list with "All events" first
+  const dynamicCategories = ['All events', ...categories.map(cat => cat.name)];
 
   const handleEditCategory = (index: number) => {
-    setNewCategoryName(categories[index]);
-    setEditingIndex(index);
-    setIsModalVisible(true);
+    // Skip "All events" (index 0) as it's not a real category
+    if (index === 0) return;
+    
+    const categoryIndex = index - 1; // Adjust for "All events"
+    const category = categories[categoryIndex];
+    if (category) {
+      setNewCategoryName(category.name);
+      setEditingCategory({ id: category._id, name: category.name });
+      setIsModalVisible(true);
+    }
   };
 
-  const handleDeleteCategory = (index: number) => {
-    if (categories.length > 1) {
-      const newCategories = [...categories];
-      newCategories.splice(index, 1);
-      setCategories(newCategories);
-      if (activeCategory === categories[index]) {
-        setActiveCategory(newCategories[0] || '');
+  const handleDeleteCategory = async (index: number) => {
+    // Skip "All events" (index 0) as it's not a real category
+    if (index === 0) return;
+    
+    const categoryIndex = index - 1; // Adjust for "All events"
+    const category = categories[categoryIndex];
+    if (category) {
+      Alert.alert(
+        'Delete Category',
+        `Are you sure you want to delete "${category.name}"?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteCategory(category._id);
+                if (activeCategory === category.name) {
+                  setActiveCategory('All events');
+                }
+              } catch (error: any) {
+                Alert.alert('Error', error.message || 'Failed to delete category');
+              }
+            }
+          }
+        ]
+      );
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (newCategoryName.trim()) {
+      try {
+        await createCategory(newCategoryName.trim());
+        setNewCategoryName('');
+        setIsModalVisible(false);
+      } catch (error: any) {
+        Alert.alert('Error', error.message || 'Failed to create category');
       }
     }
   };
 
-  const handleAddCategory = () => {
-    if (newCategoryName.trim()) {
-      setCategories([...categories, newCategoryName.trim()]);
-      setNewCategoryName('');
-      setIsModalVisible(false);
-    }
-  };
-
-  const handleUpdateCategory = () => {
-    if (editingIndex !== null && newCategoryName.trim()) {
-      const updatedCategories = [...categories];
-      updatedCategories[editingIndex] = newCategoryName.trim();
-      setCategories(updatedCategories);
-      setNewCategoryName('');
-      setEditingIndex(null);
-      setIsModalVisible(false);
+  const handleUpdateCategory = async () => {
+    if (editingCategory && newCategoryName.trim()) {
+      try {
+        await updateCategory(editingCategory.id, newCategoryName.trim());
+        setNewCategoryName('');
+        setEditingCategory(null);
+        setIsModalVisible(false);
+      } catch (error: any) {
+        Alert.alert('Error', error.message || 'Failed to update category');
+      }
     }
   };
 
@@ -93,7 +135,7 @@ const Header = ({ greeting }: HeaderProps) => {
           style={styles.addButton}
           onPress={() => {
             setNewCategoryName('');
-            setEditingIndex(null);
+            setEditingCategory(null);
             setIsModalVisible(true);
           }}
         >
@@ -104,7 +146,7 @@ const Header = ({ greeting }: HeaderProps) => {
 
       <View style={{ marginLeft: -10, marginTop: 10 }}>
         <AdminCategoryTabs
-          categories={categories}
+          categories={dynamicCategories}
           activeCategory={activeCategory}
           onCategoryPress={setActiveCategory}
           onEditPress={handleEditCategory}
@@ -121,7 +163,7 @@ const Header = ({ greeting }: HeaderProps) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              {editingIndex !== null ? 'Edit Category' : 'Add New Category'}
+              {editingCategory !== null ? 'Edit Category' : 'Add New Category'}
             </Text>
             <TextInput
               style={styles.input}
@@ -137,18 +179,18 @@ const Header = ({ greeting }: HeaderProps) => {
                 onPress={() => {
                   setIsModalVisible(false);
                   setNewCategoryName('');
-                  setEditingIndex(null);
+                  setEditingCategory(null);
                 }}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton, !newCategoryName.trim() && styles.disabledButton]}
-                onPress={editingIndex !== null ? handleUpdateCategory : handleAddCategory}
+                onPress={editingCategory !== null ? handleUpdateCategory : handleAddCategory}
                 disabled={!newCategoryName.trim()}
               >
                 <Text style={styles.saveButtonText}>
-                  {editingIndex !== null ? 'Update' : 'Add'}
+                  {editingCategory !== null ? 'Update' : 'Add'}
                 </Text>
               </TouchableOpacity>
             </View>

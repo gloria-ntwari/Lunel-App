@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useCategories } from '../../../contexts/CategoryContext';
 
 const CategoryTabs = () => {
   const [active, setActive] = useState('All events');
-  const categories = ['All events', 'Concerts', 'Theater', 'Sports', 'Festival', 'Exhibition', 'Family'];
+  const { categories, fetchCategories } = useCategories();
+  
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Create dynamic categories list with "All events" first
+  const dynamicCategories = ['All events', ...categories.map(cat => cat.name)];
 
   return (
     <View style={styles.root}>
@@ -12,7 +20,7 @@ const CategoryTabs = () => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tabsContainer}
       >
-        {categories.map((label) => {
+        {dynamicCategories.map((label) => {
           const isActive = active === label;
           return (
             <TouchableOpacity

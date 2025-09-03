@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Alert } fr
 import { MaterialIcons } from '@expo/vector-icons';
 import EventModal from './EventModal';
 import EventActionsModal from './EventActionsModal';
+import { useCategories } from '../../../contexts/CategoryContext';
 
 interface Event {
     _id: string;
@@ -49,7 +50,8 @@ const CompletedSection = ({ completedEvents, onUpdateEvent, onDeleteEvent, isLoa
     const [showActionsModal, setShowActionsModal] = useState(false);
     const [eventForActions, setEventForActions] = useState<Event | null>(null);
 
-    const categories = ['Concert', 'Theater', 'Sports', 'Festival', 'Exhibition'];
+    const { categories } = useCategories();
+    const categoryNames = categories.map(cat => cat.name);
 
     const handleEventPress = (event: Event) => {
         setEventForActions(event);
@@ -162,7 +164,7 @@ const CompletedSection = ({ completedEvents, onUpdateEvent, onDeleteEvent, isLoa
                 onClose={() => setShowEventModal(false)}
                 onSave={handleSaveEvent}
                 event={selectedEvent}
-                categories={categories}
+                categories={categoryNames}
             />
 
             {/* Event Actions Modal */}

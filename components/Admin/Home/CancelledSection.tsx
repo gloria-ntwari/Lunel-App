@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIn
 import { MaterialIcons } from '@expo/vector-icons';
 import EventModal from './EventModal';
 import EventActionsModal from './EventActionsModal';
+import { useCategories } from '../../../contexts/CategoryContext';
 
 interface Event {
   _id: string;
@@ -51,7 +52,8 @@ const CancelledSection: React.FC<CancelledSectionProps> = ({
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [eventForActions, setEventForActions] = useState<Event | null>(null);
 
-  const categories = ['Concert', 'Theater', 'Sports', 'Exhibition', 'Workshop', 'Meeting', 'Other'];
+  const { categories } = useCategories();
+  const categoryNames = categories.map(cat => cat.name);
 
   const handleEventPress = (event: Event) => {
     setSelectedEvent(event);
@@ -189,7 +191,7 @@ const CancelledSection: React.FC<CancelledSectionProps> = ({
         onClose={() => setShowEventModal(false)}
         onSave={handleSaveEvent}
         event={selectedEvent}
-        categories={categories}
+        categories={categoryNames}
       />
 
       {/* Event Actions Modal */}

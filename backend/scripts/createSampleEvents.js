@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const path = require('path');
 const Event = require('../models/Event');
 const User = require('../models/User');
-require('dotenv').config();
+
+// Load environment variables from the correct path
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const createSampleEvents = async () => {
   try {
@@ -11,120 +15,101 @@ const createSampleEvents = async () => {
       useUnifiedTopology: true,
     });
 
-    console.log('Connected to MongoDB');
+    console.log('📊 Connected to MongoDB');
 
-    // Find the admin user to use as creator
-    const adminUser = await User.findOne({ email: 'admin@lunel.com' });
+    // Find the admin user
+    const admin = await User.findOne({ email: 'admin@lunel.com' });
     
-    if (!adminUser) {
-      console.log('Admin user not found. Please create admin first.');
-      process.exit(1);
+    if (!admin) {
+      console.log('❌ Admin user not found. Please run `npm run create-admin` first.');
+      return;
     }
 
-    // Check if events already exist
-    const existingEvents = await Event.countDocuments();
-    if (existingEvents > 0) {
-      console.log('Events already exist in database!');
-      process.exit(0);
+    // Check if sample events already exist
+    const existingEvents = await Event.find({ createdBy: admin._id });
+    
+    if (existingEvents.length > 0) {
+      console.log('✅ Sample events already exist:');
+      existingEvents.forEach(event => {
+        console.log(`   - ${event.title} (${event.category})`);
+      });
+      return;
     }
 
-    // Create sample events
+    // Sample events data
     const sampleEvents = [
       {
-        title: 'KAZKA Band Concert',
-        description: 'An amazing concert by the popular Ukrainian band KAZKA',
+        title: 'Welcome Concert',
+        description: 'A special welcome concert for new students featuring local artists and bands.',
         category: 'Concert',
-        date: new Date('2024-12-20'),
-        startTime: new Date('2024-12-20T19:00:00'),
-        endTime: new Date('2024-12-20T22:00:00'),
-        location: 'Kyiv Concert Hall',
-        image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800',
-        maxAttendees: 500,
-        currentAttendees: 0,
-        createdBy: adminUser._id
-      },
-      {
-        title: 'Theater Performance - Hamlet',
-        description: 'Classic Shakespeare play performed by the National Theater',
-        category: 'Theater',
-        date: new Date('2024-12-18'),
-        startTime: new Date('2024-12-18T14:00:00'),
-        endTime: new Date('2024-12-18T16:30:00'),
-        location: 'National Theater',
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+        startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 18 * 60 * 60 * 1000), // 6 PM
+        endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 21 * 60 * 60 * 1000), // 9 PM
+        location: 'Main Auditorium',
+        image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
         maxAttendees: 200,
         currentAttendees: 0,
-        createdBy: adminUser._id
+        isActive: true,
+        createdBy: admin._id
+      },
+      {
+        title: 'Theater Workshop',
+        description: 'Learn the basics of theater and acting in this interactive workshop.',
+        category: 'Theater',
+        date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
+        startTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000), // 2 PM
+        endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 17 * 60 * 60 * 1000), // 5 PM
+        location: 'Drama Studio',
+        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+        maxAttendees: 30,
+        currentAttendees: 0,
+        isActive: true,
+        createdBy: admin._id
       },
       {
         title: 'Basketball Tournament',
-        description: 'Annual university basketball championship',
+        description: 'Annual inter-house basketball tournament. Come support your house!',
         category: 'Sports',
-        date: new Date('2024-12-22'),
-        startTime: new Date('2024-12-22T10:00:00'),
-        endTime: new Date('2024-12-22T18:00:00'),
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week from now
+        startTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 10 * 60 * 60 * 1000), // 10 AM
+        endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 16 * 60 * 60 * 1000), // 4 PM
         location: 'Sports Complex',
         image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800',
-        maxAttendees: 1000,
-        currentAttendees: 0,
-        createdBy: adminUser._id
-      },
-      {
-        title: 'Art Exhibition - Modern Masters',
-        description: 'Contemporary art exhibition featuring local and international artists',
-        category: 'Exhibition',
-        date: new Date('2024-12-15'),
-        startTime: new Date('2024-12-15T09:00:00'),
-        endTime: new Date('2024-12-15T17:00:00'),
-        location: 'Art Gallery',
-        image: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800',
-        maxAttendees: 300,
-        currentAttendees: 0,
-        createdBy: adminUser._id
-      },
-      {
-        title: 'Programming Workshop',
-        description: 'Learn React Native development from scratch',
-        category: 'Workshop',
-        date: new Date('2024-12-25'),
-        startTime: new Date('2024-12-25T10:00:00'),
-        endTime: new Date('2024-12-25T16:00:00'),
-        location: 'Computer Lab',
-        image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800',
-        maxAttendees: 50,
-        currentAttendees: 0,
-        createdBy: adminUser._id
-      },
-      {
-        title: 'Student Council Meeting',
-        description: 'Monthly student council meeting to discuss campus issues',
-        category: 'Meeting',
-        date: new Date('2024-12-12'),
-        startTime: new Date('2024-12-12T15:00:00'),
-        endTime: new Date('2024-12-12T17:00:00'),
-        location: 'Student Center',
-        image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800',
         maxAttendees: 100,
         currentAttendees: 0,
-        createdBy: adminUser._id
+        isActive: true,
+        createdBy: admin._id
+      },
+      {
+        title: 'Spring Festival',
+        description: 'Celebrate the arrival of spring with food, music, and fun activities.',
+        category: 'Festival',
+        date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 2 weeks from now
+        startTime: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000 + 12 * 60 * 60 * 1000), // 12 PM
+        endTime: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000 + 20 * 60 * 60 * 1000), // 8 PM
+        location: 'Main Campus Grounds',
+        image: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800',
+        maxAttendees: 500,
+        currentAttendees: 0,
+        isActive: true,
+        createdBy: admin._id
       }
     ];
 
     // Insert sample events
     const createdEvents = await Event.insertMany(sampleEvents);
 
-    console.log('✅ Sample events created successfully!');
-    console.log(`Created ${createdEvents.length} events:`);
+    console.log('🎉 Sample events created successfully:');
     createdEvents.forEach(event => {
-      console.log(`- ${event.title} (${event.category}) - ${event.date.toDateString()}`);
+      console.log(`   - ${event.title} (${event.category}) - ${event.date.toLocaleDateString()}`);
     });
 
   } catch (error) {
-    console.error('Error creating sample events:', error);
+    console.error('❌ Error creating sample events:', error);
   } finally {
+    // Close database connection
     await mongoose.connection.close();
-    console.log('Database connection closed');
-    process.exit(0);
+    console.log('📊 Database connection closed');
   }
 };
 

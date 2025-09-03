@@ -57,6 +57,11 @@ const AdminProfileScreen = () => {
     navigation.navigate('AdminManagement' as never);
   };
 
+  const handleManageCategories = () => {
+    // Navigate to category management screen
+    navigation.navigate('CategoryManagement' as never);
+  };
+
   const handleManageUsers = () => {
     // Navigate to user management screen
     console.log('Navigate to User Management');
@@ -103,6 +108,17 @@ const AdminProfileScreen = () => {
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Manage Admins</Text>
               <Text style={styles.actionSubtitle}>Add, edit, or remove admin users</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionCard} onPress={handleManageCategories}>
+            <View style={styles.actionIcon}>
+              <MaterialIcons name="category" size={24} color="#f96c3d" />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Manage Categories</Text>
+              <Text style={styles.actionSubtitle}>Create, edit, or delete event categories</Text>
             </View>
             <MaterialIcons name="chevron-right" size={24} color="#ccc" />
           </TouchableOpacity>

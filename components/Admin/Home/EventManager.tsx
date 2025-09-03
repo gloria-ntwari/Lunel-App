@@ -5,6 +5,7 @@ import AllSection from './AllSection';
 import CompletedSection from './CompletedSection';
 import CancelledSection from './CancelledSection';
 import { useEvents } from '../../../contexts/EventContext';
+import { useCategories } from '../../../contexts/CategoryContext';
 
 const EventManager = () => {
     const { 
@@ -20,9 +21,12 @@ const EventManager = () => {
         cancelEvent
     } = useEvents();
 
-    // Fetch events when component mounts
+    const { categories, fetchCategories } = useCategories();
+
+    // Fetch events and categories when component mounts
     useEffect(() => {
         fetchEvents();
+        fetchCategories();
     }, []);
 
     const handleAddEvent = async (newEvent: any) => {

@@ -15,6 +15,7 @@ import AdminMealsScreen from "../screens/AdminMealsScreen";
 import AdminProfileScreen from "../screens/AdminProfileScreen";
 import AdminManagementScreen from "../screens/AdminManagementScreen";
 import AdminCalendarScreen from "../screens/AdminCalendarScreen";
+import CategoryManagementScreen from "../screens/CategoryManagementScreen";
 
 const Stack = createStackNavigator();
 
@@ -36,6 +37,7 @@ export default function AppNavigator() {
             <Stack.Screen name="AdminProfile" component={AdminProfileScreen} />
             <Stack.Screen name="AdminManagement" component={AdminManagementScreen} />
             <Stack.Screen name="AdminCalendar" component={AdminCalendarScreen} />
+            <Stack.Screen name="CategoryManagement" component={CategoryManagementScreen} />
         </Stack.Navigator>
     );
 }

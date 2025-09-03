@@ -4,14 +4,17 @@ import { NavigationContainer } from '@react-navigation/native';
 import AppNavigator from './navigation/AppNavigator';
 import { AuthProvider } from './contexts/AuthContext';
 import { EventProvider } from './contexts/EventContext';
+import { CategoryProvider } from './contexts/CategoryContext';
 
 export default function App() {
   return (
     <AuthProvider>
       <EventProvider>
-        <NavigationContainer>
-          <AppNavigator />
-        </NavigationContainer>
+        <CategoryProvider>
+          <NavigationContainer>
+            <AppNavigator />
+          </NavigationContainer>
+        </CategoryProvider>
       </EventProvider>
     </AuthProvider>
   );
