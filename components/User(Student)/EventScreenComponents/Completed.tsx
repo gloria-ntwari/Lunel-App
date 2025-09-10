@@ -36,7 +36,7 @@ const CompletedEvents: React.FC<CompletedEventsProps> = ({ events, isLoading }) 
     return (
       <View style={styles.weekEventsContainer}>
         <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Completed Events ✅</Text>
+          <Text style={styles.sectionTitle}>Completed Events</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1a73e8" />
@@ -50,7 +50,7 @@ const CompletedEvents: React.FC<CompletedEventsProps> = ({ events, isLoading }) 
     return (
       <View style={styles.weekEventsContainer}>
         <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Completed Events ✅</Text>
+          <Text style={styles.sectionTitle}>Completed Events</Text>
         </View>
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>No completed events yet</Text>
@@ -63,7 +63,7 @@ const CompletedEvents: React.FC<CompletedEventsProps> = ({ events, isLoading }) 
   return (
     <View style={styles.weekEventsContainer}>
               <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Completed Events ✅</Text>
+          <Text style={styles.sectionTitle}>Completed Events</Text>
         </View>
       <ScrollView
         horizontal

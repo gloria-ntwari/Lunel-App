@@ -36,7 +36,7 @@ const RecommendedSection: React.FC<RecommendedSectionProps> = ({ events, isLoadi
     return (
       <View style={styles.recommendedContainer}>
         <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Today's Events 🔥</Text>
+          <Text style={styles.sectionTitle}>Today's Events</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1a73e8" />
@@ -50,7 +50,7 @@ const RecommendedSection: React.FC<RecommendedSectionProps> = ({ events, isLoadi
     return (
       <View style={styles.recommendedContainer}>
         <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Today's Events 🔥</Text>
+          <Text style={styles.sectionTitle}>Today's Events</Text>
         </View>
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>No events today</Text>
@@ -63,7 +63,7 @@ const RecommendedSection: React.FC<RecommendedSectionProps> = ({ events, isLoadi
   return (
     <View style={styles.recommendedContainer}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Today's Events 🔥</Text>
+        <Text style={styles.sectionTitle}>Today's Events</Text>
       </View>
       <ScrollView
         horizontal

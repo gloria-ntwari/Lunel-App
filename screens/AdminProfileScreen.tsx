@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import BottomNav from '../components/Admin/BottomNav';
@@ -9,7 +9,7 @@ import { API_CONFIG } from '../config/api';
 
 const AdminProfileScreen = () => {
   const navigation = useNavigation();
-  const { user, logout, refreshUserData } = useAuth();
+  const { user, logout, refreshUserData, updateProfile } = useAuth();
   const [stats, setStats] = useState({ events: 0, meals: 0, users: 0, admins: 0, students: 0 });
   const [adminInfo, setAdminInfo] = useState({
     name: '',
@@ -19,6 +19,14 @@ const AdminProfileScreen = () => {
     joinDate: 'January 2024',
     permissions: ['Manage Events', 'Manage Meals', 'Manage Admins']
   });
+
+  // Edit state
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   // Load user data when component mounts or user changes
   useEffect(() => {
@@ -36,6 +44,8 @@ const AdminProfileScreen = () => {
                      user.role === 'event_manager' ? ['Manage Events'] :
                      user.role === 'meal_coordinator' ? ['Manage Meals'] : [],
       }));
+      setEditName(user.name || '');
+      setEditEmail(user.email || '');
       // load stats
       axios.get(`${API_CONFIG.BASE_URL}/stats/overview`).then(res => {
         const d = res.data?.data;
@@ -84,6 +94,57 @@ const AdminProfileScreen = () => {
   const handleSettings = () => {
     // Navigate to admin settings
     console.log('Navigate to Admin Settings');
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      if (!editName.trim() || !editEmail.trim()) {
+        Alert.alert('Validation', 'Name and Email are required.');
+        return;
+      }
+      setSavingProfile(true);
+      const result = await updateProfile(editName.trim(), editEmail.trim());
+      if (result.success) {
+        await refreshUserData();
+        Alert.alert('Success', 'Profile updated successfully.');
+      } else {
+        Alert.alert('Update failed', result.message || 'Please try again.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Failed to update profile.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      if (!newPassword || !confirmPassword) {
+        Alert.alert('Validation', 'Please enter and confirm your new password.');
+        return;
+      }
+      if (newPassword.length < 6) {
+        Alert.alert('Validation', 'Password must be at least 6 characters.');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        Alert.alert('Validation', 'Passwords do not match.');
+        return;
+      }
+      setSavingPassword(true);
+      const result = await updateProfile(editName || user?.name || '', editEmail || user?.email || '', newPassword);
+      if (result.success) {
+        setNewPassword('');
+        setConfirmPassword('');
+        Alert.alert('Success', 'Password changed successfully.');
+      } else {
+        Alert.alert('Change failed', result.message || 'Please try again.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Failed to change password.');
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   return (
@@ -148,6 +209,59 @@ const AdminProfileScreen = () => {
                 <Text style={styles.permissionText}>{permission}</Text>
               </View>
             ))}
+          </View>
+        </View>
+
+        {/* Account Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account Settings</Text>
+          <View style={styles.card}>
+            <Text style={styles.label}>Name</Text>
+            <TextInput
+              style={styles.input}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Your name"
+              autoCapitalize="words"
+            />
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={editEmail}
+              onChangeText={setEditEmail}
+              placeholder="you@example.com"
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            <TouchableOpacity style={styles.primaryButton} onPress={handleSaveProfile} disabled={savingProfile}>
+              {savingProfile ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Save Profile</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Change Password */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Change Password</Text>
+          <View style={styles.card}>
+            <Text style={styles.label}>New Password</Text>
+            <TextInput
+              style={styles.input}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="Enter new password"
+              secureTextEntry
+            />
+            <Text style={styles.label}>Confirm New Password</Text>
+            <TextInput
+              style={styles.input}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="Confirm new password"
+              secureTextEntry
+            />
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleChangePassword} disabled={savingPassword}>
+              {savingPassword ? <ActivityIndicator color="#5b1ab2" /> : <Text style={styles.secondaryButtonText}>Update Password</Text>}
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -314,6 +428,11 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
   },
+  card: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 12,
+  },
   permissionItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -323,6 +442,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     marginLeft: 12,
+  },
+  label: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 6,
+    marginTop: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  primaryButton: {
+    marginTop: 14,
+    backgroundColor: '#5b1ab2',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    marginTop: 14,
+    backgroundColor: 'rgba(91,26,178,0.08)',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#5b1ab2',
+  },
+  secondaryButtonText: {
+    color: '#5b1ab2',
+    fontSize: 16,
+    fontWeight: '600',
   },
   statsContainer: {
     flexDirection: 'row',

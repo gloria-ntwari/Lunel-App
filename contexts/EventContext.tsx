@@ -118,7 +118,28 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
 
-      const response = await axios.post('/events', eventData);
+      // If image is a local file URI, send multipart/form-data
+      const isLocalImage = typeof (eventData as any).image === 'string' && (eventData as any).image.startsWith('file:');
+      let response;
+      if (isLocalImage) {
+        const formData = new FormData();
+        Object.entries(eventData as any).forEach(([key, value]) => {
+          if (key === 'image' && typeof value === 'string') {
+            const uri = value as unknown as string;
+            const name = uri.split('/').pop() || `upload-${Date.now()}.jpg`;
+            const type = name.endsWith('.png') ? 'image/png' : 'image/jpeg';
+            // @ts-ignore FormData file part for React Native
+            formData.append('image', { uri, name, type });
+          } else if (value !== undefined && value !== null) {
+            formData.append(key, value as any);
+          }
+        });
+        response = await axios.post('/events', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        response = await axios.post('/events', eventData);
+      }
       
       if (response.data.success) {
         const newEvent = response.data.data.event;
@@ -151,7 +172,27 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
 
-      const response = await axios.put(`/events/${eventId}`, eventData);
+      const isLocalImage = typeof (eventData as any).image === 'string' && (eventData as any).image.startsWith('file:');
+      let response;
+      if (isLocalImage) {
+        const formData = new FormData();
+        Object.entries(eventData as any).forEach(([key, value]) => {
+          if (key === 'image' && typeof value === 'string') {
+            const uri = value as unknown as string;
+            const name = uri.split('/').pop() || `upload-${Date.now()}.jpg`;
+            const type = name.endsWith('.png') ? 'image/png' : 'image/jpeg';
+            // @ts-ignore FormData file part for React Native
+            formData.append('image', { uri, name, type });
+          } else if (value !== undefined && value !== null) {
+            formData.append(key, value as any);
+          }
+        });
+        response = await axios.put(`/events/${eventId}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        response = await axios.put(`/events/${eventId}`, eventData);
+      }
       
       if (response.data.success) {
         const updatedEvent = response.data.data.event;

@@ -63,7 +63,7 @@ const AllEventsSection: React.FC<AllEventsSectionProps> = ({ events, isLoading }
   return (
     <View style={styles.recommendedContainer}>
               <View style={styles.header}>
-          <Text style={styles.sectionTitle}>All Events 📅</Text>
+          <Text style={styles.sectionTitle}>All Events</Text>
         </View>
       <ScrollView
         horizontal

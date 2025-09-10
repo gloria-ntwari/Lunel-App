@@ -44,7 +44,7 @@ const CancelledEventsSection: React.FC<CancelledEventsSectionProps> = ({ events,
     return (
       <View style={styles.recommendedContainer}>
         <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Cancelled Events ❌</Text>
+          <Text style={styles.sectionTitle}>Cancelled Events</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#e74c3c" />
@@ -58,7 +58,7 @@ const CancelledEventsSection: React.FC<CancelledEventsSectionProps> = ({ events,
     return (
       <View style={styles.recommendedContainer}>
         <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Cancelled Events ❌</Text>
+          <Text style={styles.sectionTitle}>Cancelled Events</Text>
         </View>
         <View style={styles.emptyState}>
           <MaterialIcons name="event-busy" size={48} color="#e74c3c" />
@@ -72,7 +72,7 @@ const CancelledEventsSection: React.FC<CancelledEventsSectionProps> = ({ events,
   return (
     <View style={styles.recommendedContainer}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Cancelled Events ❌</Text>
+        <Text style={styles.sectionTitle}>Cancelled Events</Text>
       </View>
       <ScrollView
         horizontal

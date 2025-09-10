@@ -3,8 +3,29 @@ const Event = require('../models/Event');
 const { auth, requireRole } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 const Notification = require('../models/Notification');
+const multer = require('multer');
+const path = require('path');
 
 const router = express.Router();
+
+// Multer storage for uploads directory
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '..', 'uploads'));
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9-_]/g, '');
+    cb(null, `${base}-${Date.now()}${ext}`);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+  if (allowed.includes(file.mimetype)) cb(null, true); else cb(new Error('Invalid image type'));
+};
+
+const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // Validation middleware
 const handleValidationErrors = (req, res, next) => {
@@ -142,10 +163,19 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/events
 // @desc    Create new event
 // @access  Private (Admin only)
-router.post('/', auth, requireRole(['admin', 'super_admin', 'event_manager']), validateEvent, async (req, res) => {
+router.post('/', auth, requireRole(['admin', 'super_admin', 'event_manager']), upload.single('image'), validateEvent, async (req, res) => {
   try {
+    // Build absolute URL for uploaded image if present
+    let imageUrl = undefined;
+    if (req.file) {
+      const host = req.get('host');
+      const protocol = req.protocol;
+      imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    }
+
     const eventData = {
       ...req.body,
+      ...(imageUrl ? { image: imageUrl } : {}),
       createdBy: req.user._id
     };
 
@@ -192,7 +222,7 @@ router.post('/', auth, requireRole(['admin', 'super_admin', 'event_manager']), v
 // @route   PUT /api/events/:id
 // @desc    Update event
 // @access  Private (Admin only)
-router.put('/:id', auth, requireRole(['admin', 'super_admin', 'event_manager']), validateEvent, async (req, res) => {
+router.put('/:id', auth, requireRole(['admin', 'super_admin', 'event_manager']), upload.single('image'), validateEvent, async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
 
@@ -214,9 +244,16 @@ router.put('/:id', auth, requireRole(['admin', 'super_admin', 'event_manager']),
       });
     }
 
+    const updateData = { ...req.body };
+    if (req.file) {
+      const host = req.get('host');
+      const protocol = req.protocol;
+      updateData.image = `${protocol}://${host}/uploads/${req.file.filename}`;
+    }
+
     const updatedEvent = await Event.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     ).populate('createdBy', 'name email');
 

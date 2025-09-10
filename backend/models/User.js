@@ -61,6 +61,40 @@ userSchema.pre('save', function(next) {
   next();
 });
 
+// Ensure password is hashed when updated via findOneAndUpdate / findByIdAndUpdate
+userSchema.pre('findOneAndUpdate', async function(next) {
+  try {
+    const update = this.getUpdate();
+    if (!update) return next();
+
+    // Normalize to direct fields regardless of $set usage
+    const updateDoc = update.$set ? update.$set : update;
+
+    if (updateDoc.password) {
+      const salt = await bcrypt.genSalt(10);
+      const hashed = await bcrypt.hash(updateDoc.password, salt);
+      updateDoc.password = hashed;
+      if (update.$set) {
+        update.$set.password = hashed;
+      } else {
+        this.setUpdate(updateDoc);
+      }
+    }
+
+    // Always bump updatedAt on updates
+    updateDoc.updatedAt = Date.now();
+    if (update.$set) {
+      update.$set.updatedAt = updateDoc.updatedAt;
+    } else {
+      this.setUpdate(updateDoc);
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
