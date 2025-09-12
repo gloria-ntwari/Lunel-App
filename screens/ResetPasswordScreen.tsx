@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import axios from 'axios';
 
 const ResetPasswordScreen = () => {
     const navigation = useNavigation();
+    const route = useRoute() as any;
+    const presetEmail = route?.params?.email as string | undefined;
+    const presetToken = route?.params?.token as string | undefined;
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [email, setEmail] = useState(presetEmail || '');
+    const [token, setToken] = useState(presetToken || '');
+    const [submitting, setSubmitting] = useState(false);
 
-    const handleSavePassword = () => {
-        if (!newPassword.trim() || !confirmPassword.trim()) {
-            Alert.alert('Error', 'Please fill in all fields');
+    const handleSavePassword = async () => {
+        if (!email.trim() || !token.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+            Alert.alert('Error', 'Please fill in all fields (email, token, passwords)');
             return;
         }
 
@@ -25,18 +32,25 @@ const ResetPasswordScreen = () => {
             Alert.alert('Error', 'Password must be at least 6 characters long');
             return;
         }
-
-        // Password reset successful
-        Alert.alert(
-            'Success',
-            'Your password has been reset successfully',
-            [
-                {
-                    text: 'OK',
-                    onPress: () => navigation.navigate('Login' as never)
-                }
-            ]
-        );
+        try {
+            setSubmitting(true);
+            const res = await axios.post('/auth/reset', {
+                email: email.trim().toLowerCase(),
+                token: token.trim(),
+                password: newPassword,
+            });
+            if (res.data?.success) {
+                Alert.alert('Success', 'Your password has been reset successfully', [
+                    { text: 'OK', onPress: () => navigation.navigate('Login' as never) }
+                ]);
+            } else {
+                Alert.alert('Error', res.data?.message || 'Failed to reset password');
+            }
+        } catch (e: any) {
+            Alert.alert('Error', e?.response?.data?.message || 'Failed to reset password');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handleBack = () => {
@@ -56,9 +70,36 @@ const ResetPasswordScreen = () => {
 
             {/* Content */}
             <View style={styles.content}>
-                <Text style={styles.instructionText}>
-                    Enter the new password for your account
-                </Text>
+                <Text style={styles.instructionText}>Enter reset token sent to your email and set a new password</Text>
+
+                <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Email</Text>
+                    <View style={styles.passwordInputContainer}>
+                        <TextInput
+                            style={styles.passwordInput}
+                            placeholder="Email"
+                            placeholderTextColor="#999"
+                            value={email}
+                            onChangeText={setEmail}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                        />
+                    </View>
+                </View>
+
+                <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Reset Token</Text>
+                    <View style={styles.passwordInputContainer}>
+                        <TextInput
+                            style={styles.passwordInput}
+                            placeholder="Paste reset token"
+                            placeholderTextColor="#999"
+                            value={token}
+                            onChangeText={setToken}
+                            autoCapitalize="none"
+                        />
+                    </View>
+                </View>
 
                 <View style={styles.inputContainer}>
                     <Text style={styles.inputLabel}>New Password</Text>
@@ -114,8 +155,9 @@ const ResetPasswordScreen = () => {
                     style={styles.saveButton}
                     onPress={handleSavePassword}
                     activeOpacity={0.8}
+                    disabled={submitting}
                 >
-                    <Text style={styles.saveButtonText}>Save Password</Text>
+                    {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Save Password</Text>}
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 const { 
@@ -8,6 +9,7 @@ const {
   validateEmailDomain,
   validateEmailDomainForLogin
 } = require('../middleware/validation');
+const { sendMail } = require('../utils/mailer');
 
 const router = express.Router();
 
@@ -156,6 +158,76 @@ router.post('/logout', auth, (req, res) => {
     success: true,
     message: 'Logout successful'
   });
+});
+
+// @route   POST /api/auth/forgot
+// @desc    Start password reset flow (send email with token)
+// @access  Public
+router.post('/forgot', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "No account found with this email. Please sign up first." });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = expires;
+    await user.save();
+
+    const baseUrl = process.env.APP_BASE_URL || 'http://localhost:5000';
+    const resetLink = `${baseUrl}/api/auth/reset?token=${token}&email=${encodeURIComponent(user.email)}`;
+
+    const subject = 'Lunel Password Reset';
+    const text = `You requested a password reset. Use this token: ${token}. Or open: ${resetLink}`;
+    const html = `<p>You requested a password reset.</p><p><b>Token:</b> ${token}</p><p>Or click this link: <a href="${resetLink}">${resetLink}</a></p><p>This link expires in 15 minutes.</p>`;
+    try { await sendMail({ to: user.email, subject, text, html }); } catch (e) { console.warn('Email send failed', e.message); }
+
+    const payload = { success: true, message: 'If that email exists, a reset link has been sent' };
+    if (process.env.NODE_ENV !== 'production') {
+      payload.token = token;
+      payload.expiresAt = expires.toISOString();
+      payload.resetLink = resetLink;
+    }
+    res.json(payload);
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ success: false, message: 'Server error while initiating reset' });
+  }
+});
+
+// @route   POST /api/auth/reset
+// @desc    Complete password reset with token
+// @access  Public
+router.post('/reset', async (req, res) => {
+  try {
+    const { email, token, password } = req.body;
+    if (!email || !token || !password) {
+      return res.status(400).json({ success: false, message: 'Email, token and new password are required' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase(), resetPasswordToken: token, resetPasswordExpires: { $gt: new Date() } });
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+    }
+
+    user.password = password; // will be hashed by pre('save')
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    res.json({ success: true, message: 'Password has been reset successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ success: false, message: 'Server error while resetting password' });
+  }
 });
 
 // @route   PUT /api/auth/profile

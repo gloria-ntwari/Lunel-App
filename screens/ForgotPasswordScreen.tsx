@@ -1,18 +1,37 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
 
 const ForgotPasswordScreen = () => {
     const navigation = useNavigation();
-    const [phoneOrEmail, setPhoneOrEmail] = useState('');
+    const [email, setEmail] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
-    const handleSendVerificationCode = () => {
-        if (phoneOrEmail.trim()) {
-
-            navigation.navigate('OTPVerification' as never);
-        } else {
-            Alert.alert('Error', 'Please enter your phone number or email');
+    const handleSendVerificationCode = async () => {
+        if (!email.trim()) {
+            Alert.alert('Error', 'Please enter your email');
+            return;
+        }
+        try {
+            setSubmitting(true);
+            const res = await axios.post('/auth/forgot', { email: email.trim().toLowerCase() });
+            const data = res.data || {};
+            if (data.success) {
+                const devToken = data.token as string | undefined;
+                Alert.alert('Check your email', 'If that email exists, a reset link has been sent.');
+                navigation.navigate('ResetPassword' as never, { email: email.trim(), token: devToken } as never);
+            } else {
+                Alert.alert('Error', data.message || 'Failed to start reset');
+            }
+        } catch (e: any) {
+            const msg = e?.response?.status === 404
+                ? "No account found with this email. Please sign up first."
+                : (e?.response?.data?.message || 'Failed to start reset');
+            Alert.alert('Error', msg);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -34,16 +53,16 @@ const ForgotPasswordScreen = () => {
             {/* Content */}
             <View style={styles.content}>
                 <Text style={styles.instructionText}>
-                    Enter your phone number or email to receive the reset code for account recovery
+                    Enter your email to receive a password reset token
                 </Text>
 
                 <View style={styles.inputContainer}>
                     <TextInput
                         style={styles.input}
-                        placeholder="Phone Number or Email"
+                        placeholder="Email"
                         placeholderTextColor="#999"
-                        value={phoneOrEmail}
-                        onChangeText={setPhoneOrEmail}
+                        value={email}
+                        onChangeText={setEmail}
                         autoCapitalize="none"
                         keyboardType="email-address"
                     />
@@ -53,8 +72,9 @@ const ForgotPasswordScreen = () => {
                     style={styles.sendButton}
                     onPress={handleSendVerificationCode}
                     activeOpacity={0.8}
+                    disabled={submitting}
                 >
-                    <Text style={styles.sendButtonText}>Send Verification Code</Text>
+                    {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendButtonText}>Send Verification Code</Text>}
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

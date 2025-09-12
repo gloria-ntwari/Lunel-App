@@ -40,6 +40,12 @@ const userSchema = new mongoose.Schema({
   }
 });
 
+// Password reset fields
+userSchema.add({
+  resetPasswordToken: { type: String, default: null },
+  resetPasswordExpires: { type: Date, default: null }
+});
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {

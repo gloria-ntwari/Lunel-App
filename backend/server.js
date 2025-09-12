@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
 const connectDB = require('./config/database');
 
 // Load environment variables
@@ -45,10 +46,17 @@ app.use('/api/admins', require('./routes/admins'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  const conn = mongoose.connection;
+  const statusMap = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
   res.json({
     success: true,
     message: 'Lunel Backend API is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    db: {
+      state: statusMap[conn.readyState] || String(conn.readyState),
+      host: conn?.host || null,
+      name: conn?.name || null
+    }
   });
 });
 
