@@ -13,7 +13,7 @@ import { useCategories } from '../contexts/CategoryContext';
 const CalendarScreen = () => {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [editingEvent, setEditingEvent] = useState(null);
+    const [editingEvent, setEditingEvent] = useState<any | null>(null);
 
     const { events, monthEvents, isLoading, fetchEventsByDate, fetchEventsByMonth, createEvent, updateEvent, cancelEvent } = useCalendar();
     const { fetchCategories } = useCategories();
@@ -50,6 +50,9 @@ const CalendarScreen = () => {
 
     const handleUpdateEvent = async (eventData: any) => {
         try {
+            if (!editingEvent || !editingEvent._id) {
+                throw new Error('No event selected to update');
+            }
             await updateEvent(editingEvent._id, eventData);
             setEditingEvent(null);
             Alert.alert('Success', 'Event updated successfully!');
@@ -130,8 +133,8 @@ const CalendarScreen = () => {
                     <FlatList
                         data={events}
                         renderItem={({ item }) => (
-                            <EventItem 
-                                event={item} 
+                            <EventItem
+                                event={item}
                                 onEdit={() => handleEditEvent(item)}
                                 onCancel={() => handleCancelEvent(item._id)}
                             />
@@ -172,32 +175,32 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     scrollView: { flex: 1 },
-    sectionHeaderRow: { 
+    sectionHeaderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 24, 
-        marginTop: 8, 
-        marginBottom: 12 
+        paddingHorizontal: 24,
+        marginTop: 8,
+        marginBottom: 12
     },
     sectionHeader: { fontSize: 16, fontWeight: '600', color: '#333' },
     addButton: {
         padding: 4,
     },
-    loadingContainer: { 
-        padding: 24, 
-        alignItems: 'center' 
+    loadingContainer: {
+        padding: 24,
+        alignItems: 'center'
     },
-    loadingText: { 
-        color: '#666', 
-        fontSize: 16 
+    loadingText: {
+        color: '#666',
+        fontSize: 16
     },
-    noEventsContainer: { 
-        padding: 24, 
-        alignItems: 'center' 
+    noEventsContainer: {
+        padding: 24,
+        alignItems: 'center'
     },
-    noEventsText: { 
-        color: '#999', 
+    noEventsText: {
+        color: '#999',
         fontSize: 16,
         marginBottom: 16
     },

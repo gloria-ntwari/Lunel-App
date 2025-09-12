@@ -6,7 +6,7 @@ const BASE_URL = Platform.select({
   ios: 'http://localhost:5000/api',
   web: 'http://localhost:5000/api',
 
-  android: 'http://10.12.74.23:5000/api',
+  android: 'http://10.12.75.184:5000/api',
 
   default: 'http://localhost:5000/api',
 });

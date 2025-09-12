@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, addDays, subDays, isSameMonth, isSameDay, getDay } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, addDays, subDays, isSameMonth, isSameDay, getDay, startOfWeek } from 'date-fns';
 
 interface Props {
   selectedDate: Date;
@@ -11,18 +11,21 @@ interface Props {
 
 const CalendarCard: React.FC<Props> = ({ selectedDate, onDateChange, events }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const today = new Date(); // Current date (August 30, 2025)
+  // Normalize "today" to noon to avoid DST/offset edge cases when adding/subtracting days
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
 
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
+  // Normalize the current month date to noon as well
+  const normalizedCurrentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1, 12);
+  const monthStart = startOfMonth(normalizedCurrentMonth);
 
-  const firstDayOfMonth = getDay(monthStart);
-  const calendarStart = subDays(monthStart, firstDayOfMonth);
+  // Anchor grid to the beginning of the week (Sunday) that contains the first of the month
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
 
   const calendarDays: Date[] = [];
-  let tempDay = calendarStart;
+  let tempDay = new Date(calendarStart);
   for (let i = 0; i < 42; i++) { // 6 weeks x 7 days
-    calendarDays.push(tempDay);
+    calendarDays.push(new Date(tempDay));
     tempDay = addDays(tempDay, 1);
   }
 
@@ -33,7 +36,7 @@ const CalendarCard: React.FC<Props> = ({ selectedDate, onDateChange, events }) =
     const dayEvents = events.filter(event => isSameDay(event.date, day));
     const isSelected = isSameDay(day, selectedDate);
     const isToday = isSameDay(day, today);
-    const isCurrentMonth = isSameMonth(day, currentDate);
+    const isCurrentMonth = isSameMonth(day, monthStart);
 
     return (
       <TouchableOpacity
@@ -41,7 +44,7 @@ const CalendarCard: React.FC<Props> = ({ selectedDate, onDateChange, events }) =
         style={[
           styles.dayContainer,
           isSelected && styles.selectedDay,
-          isToday && styles.todayDay, // Apply purple background for today
+          isToday && styles.todayDay,
         ]}
         onPress={() => {
           onDateChange(day);
@@ -110,14 +113,14 @@ const styles = StyleSheet.create({
   calendarHeaderText: { fontSize: 18, fontWeight: '600', color: '#333' },
   calendarChevron: { fontSize: 24, color: '#6B46C1', paddingHorizontal: 10 },
   weekDaysContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  weekDayText: { width: 40, textAlign: 'center', fontSize: 12, color: '#666' },
-  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  dayContainer: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 20, marginVertical: 4 },
+  weekDayText: { flex: 1, textAlign: 'center', fontSize: 12, color: '#666' },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
+  dayContainer: { width: '14.2857%', height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 20 },
   selectedDay: { backgroundColor: '#6B46C1' },
-  todayDay: { backgroundColor: '#6B46C1', opacity: 0.7 }, // Purple background for today, slightly transparent to differentiate from selected
+  todayDay: { backgroundColor: '#6B46C1', opacity: 0.7 },
   dayText: { fontSize: 16, color: '#333', fontWeight: '500' },
   otherMonthText: { color: '#bbb' },
-  selectedDayText: { color: '#fff' }, // White text for selected day for contrast
+  selectedDayText: { color: '#fff' },
   eventDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#f96c3d', marginTop: 2 },
 });
 
