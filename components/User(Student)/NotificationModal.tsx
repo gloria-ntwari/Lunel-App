@@ -1,40 +1,51 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, TouchableWithoutFeedback } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-
-interface Notification {
-    id: string;
-    title: string;
-    message: string;
-    type: 'event' | 'reminder' | 'update';
-    timestamp: string;
-    isRead: boolean;
-}
+import { useNavigation } from '@react-navigation/native';
+import { NotificationItem } from '../../contexts/NotificationsContext';
 
 interface NotificationModalProps {
     visible: boolean;
     onClose: () => void;
-    notifications: Notification[];
+    notifications: NotificationItem[];
     onMarkAsRead: (id: string) => void;
+    onMarkAllAsRead: () => void;
 }
 
-const NotificationModal = ({ visible, onClose, notifications, onMarkAsRead }: NotificationModalProps) => {
-    const handleNotificationPress = (notification: Notification) => {
+const NotificationModal = ({ visible, onClose, notifications, onMarkAsRead, onMarkAllAsRead }: NotificationModalProps) => {
+    const navigation = useNavigation();
+
+    const handleNotificationPress = (notification: NotificationItem) => {
         if (!notification.isRead) {
-            onMarkAsRead(notification.id);
+            onMarkAsRead(notification._id);
         }
-        // Here you can add navigation logic to the specific event/feature
-        console.log('Navigate to:', notification.title);
+        
+        // Navigate to Event screen and determine which section to show
+        const eventDate = new Date(notification.eventDate);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        let targetSection = 'upcoming'; // default
+        if (notification.type === 'event_cancelled') {
+            targetSection = 'cancelled';
+        } else if (eventDate.toDateString() === today.toDateString()) {
+            targetSection = 'today';
+        } else if (eventDate < today) {
+            targetSection = 'completed';
+        }
+        
+        onClose();
+        navigation.navigate('Event' as never, { scrollToSection: targetSection } as never);
     };
 
     const getNotificationIcon = (type: string) => {
         switch (type) {
-            case 'event':
+            case 'event_created':
                 return 'event';
-            case 'reminder':
-                return 'alarm';
-            case 'update':
-                return 'update';
+            case 'event_cancelled':
+                return 'cancel';
             default:
                 return 'notifications';
         }
@@ -42,14 +53,26 @@ const NotificationModal = ({ visible, onClose, notifications, onMarkAsRead }: No
 
     const getNotificationColor = (type: string) => {
         switch (type) {
-            case 'event':
+            case 'event_created':
                 return '#5b1ab2';
-            case 'reminder':
-                return '#f96c3d';
-            case 'update':
-                return '#27ae60';
+            case 'event_cancelled':
+                return '#e74c3c';
             default:
                 return '#666';
+        }
+    };
+
+    const formatTime = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+        
+        if (diffInHours < 1) {
+            return 'Just now';
+        } else if (diffInHours < 24) {
+            return `${Math.floor(diffInHours)}h ago`;
+        } else {
+            return date.toLocaleDateString();
         }
     };
 
@@ -83,7 +106,7 @@ const NotificationModal = ({ visible, onClose, notifications, onMarkAsRead }: No
                                 ) : (
                                     notifications.map((notification) => (
                                         <TouchableOpacity
-                                            key={notification.id}
+                                            key={notification._id}
                                             style={[
                                                 styles.notificationItem,
                                                 !notification.isRead && styles.unreadNotification
@@ -102,7 +125,7 @@ const NotificationModal = ({ visible, onClose, notifications, onMarkAsRead }: No
                                             <View style={styles.notificationContent}>
                                                 <Text style={styles.notificationTitle}>{notification.title}</Text>
                                                 <Text style={styles.notificationMessage}>{notification.message}</Text>
-                                                <Text style={styles.notificationTime}>{notification.timestamp}</Text>
+                                                <Text style={styles.notificationTime}>{formatTime(notification.createdAt)}</Text>
                                             </View>
 
                                             {!notification.isRead && (
@@ -116,7 +139,7 @@ const NotificationModal = ({ visible, onClose, notifications, onMarkAsRead }: No
                             {/* Footer Actions */}
                             {notifications.length > 0 && (
                                 <View style={styles.footer}>
-                                    <TouchableOpacity style={styles.markAllReadButton}>
+                                    <TouchableOpacity style={styles.markAllReadButton} onPress={onMarkAllAsRead}>
                                         <Text style={styles.markAllReadText}>Mark All as Read</Text>
                                     </TouchableOpacity>
                                 </View>

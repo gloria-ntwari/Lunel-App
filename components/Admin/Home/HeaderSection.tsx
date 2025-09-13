@@ -117,7 +117,6 @@ const Header = ({ greeting }: HeaderProps) => {
             <Text style={styles.locationText}>{user ? `Hello, ${user.name}` : greeting}</Text>
           </View>
         </TouchableOpacity>
-        <Ionicons name="notifications-outline" size={22} color="#fff" />
       </View>
 
       <View style={styles.searchRow}>

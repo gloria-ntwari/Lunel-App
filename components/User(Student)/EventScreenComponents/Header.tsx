@@ -22,7 +22,7 @@ interface HeaderProps {
 
 const Header = ({ greeting }: HeaderProps) => {
   const { user } = useAuth();
-  const { notifications, unreadCount, fetchNotifications, markAsRead } = useNotifications();
+  const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead } = useNotifications();
   const { setSearchQuery } = useEvents();
   const [notificationModalVisible, setNotificationModalVisible] = useState(false);
   const [search, setSearch] = useState('');
@@ -36,15 +36,7 @@ const Header = ({ greeting }: HeaderProps) => {
   };
 
   const handleMarkAsRead = (id: string) => { markAsRead(id); };
-
-  const modalNotifications = notifications.map(n => ({
-    id: n._id,
-    title: n.title,
-    message: n.message,
-    type: n.type === 'event_created' ? 'event' : 'update',
-    timestamp: new Date(n.createdAt).toLocaleString(),
-    isRead: n.isRead,
-  }));
+  const handleMarkAllAsRead = () => { markAllAsRead(); };
 
   return (
     <>
@@ -102,8 +94,9 @@ const Header = ({ greeting }: HeaderProps) => {
       <NotificationModal
         visible={notificationModalVisible}
         onClose={handleCloseNotificationModal}
-        notifications={modalNotifications as any}
+        notifications={notifications}
         onMarkAsRead={handleMarkAsRead}
+        onMarkAllAsRead={handleMarkAllAsRead}
       />
     </>
   );

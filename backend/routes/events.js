@@ -199,9 +199,12 @@ router.post('/', auth, requireRole(['admin', 'super_admin', 'event_manager']), u
     // Create notification for event creation
     try {
       await Notification.create({
-        title: 'New event added',
-        message: `${req.body.title} was added`,
+        title: 'New Event Added',
+        message: `${req.body.title} has been added to the calendar`,
         type: 'event_created',
+        eventId: event._id,
+        eventTitle: req.body.title,
+        eventDate: new Date(req.body.date),
       });
     } catch (e) { console.warn('Notify create failed', e.message); }
 
@@ -334,9 +337,12 @@ router.patch('/:id/cancel', auth, requireRole(['admin', 'super_admin', 'event_ma
     // Create notification for event cancellation
     try {
       await Notification.create({
-        title: 'Event cancelled',
-        message: `${updatedEvent.title} was cancelled`,
+        title: 'Event Cancelled',
+        message: `${updatedEvent.title} has been cancelled`,
         type: 'event_cancelled',
+        eventId: updatedEvent._id,
+        eventTitle: updatedEvent.title,
+        eventDate: updatedEvent.date,
       });
     } catch (e) { console.warn('Notify cancel failed', e.message); }
 
